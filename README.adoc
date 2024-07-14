@@ -1,0 +1,61 @@
+= makejail
+:author: Matthias "Maddes" Bücher
+:url-maddes: https://www.maddes.net/
+:toc:
+
+
+== About makejail
+
+makejail was developed by Alain Tésio and available at https://www.floc.net/makejail/. +
+Its intended purpose was to create jails for chrooted services and users.
+
+Nowadays services are separated via containers (e.g. LXC, Docker), and pure SFTP users are separated via OpenSSH's `ChrootDirectory` functionality.
+
+makejail can still be useful to create jails for chrooted users that actually log onto a system. +
+If no direct login on the machine itself is needed, then it's also possible to set up a container that runs SSH on another port and mounts the user's directories inside the container.
+
+
+== About makejail and Debian
+
+The `makejail` package was removed with Debian 9 "Stretch".
+But, the last version 0.0.5-10 from Debian 8 "Jessie" could still be installed manually in Debian 9 "Stretch" and Debian 10 "Buster":
+```
+wget -N http://cdimage.debian.org/mirror/cdimage/snapshot/Debian/pool/main/m/makejail/makejail_0.0.5-10_all.deb
+apt-get install binstats psmisc strace
+dpkg --install ./makejail_0.0.5-10_all.deb
+sed -i -E -e '1,1 { s/python(\b)/python2\1/ }' /usr/sbin/makejail
+apt-get install --fix-broken
+```
+
+In Debian 11 "Bullseye" Python 2 is not installed by default anymore, so it has to be installed too, and the error about the missing `python` package can be ignored when installing makejail:
+```
+apt-get install python2
+# ... plus commands from above
+TODO: fix package status
+```
+
+In Debian 12 "Bookworm" Python 2 was removed.
+While Ubuntu up to 22.04 LTS provides Python 2, although not installed by default.
+
+makejail is still referenced in https://www.debian.org/doc/manuals/securing-debian-manual/chroot-ssh-env.en.html[Securing Debian Manual, Appendix B.7] as of 2024-07.
+
+== About this repository
+
+This repository contains makejail converted to Python 3 so it can be used in Debian 12 "Bookworm" and later.
+The conversion targets for Python 3.5 which comes with Debian 9 "Stretch", while considering changes up to Python 3.12.
+Dependencies on removed and deprecated python libraries were checked, 2to3 was used for general conversion, strings are done with `.format()` as f-string are only available since 3.6.
+
+=== Branches & Tags
+
+* Tag `0.0.5-original`
+** Original (non-Debian) version.
+** `wget -N http://cdimage.debian.org/mirror/cdimage/snapshot/Debian/pool/main/m/makejail/makejail_0.0.5.orig.tar.gz`
+** `tar -x -f makejail_0.0.5.orig.tar.gz`
+* Tag `0.0.5-10-debian`
+** Last Debian version.
+** `apt-get install --no-install-recommends dpkg-dev ; ## build-essential is too much for extraction`
+** `wget -N http://cdimage.debian.org/mirror/cdimage/snapshot/Debian/pool/main/m/makejail/makejail_0.0.5-10.diff.gz`
+** `wget -N http://cdimage.debian.org/mirror/cdimage/snapshot/Debian/pool/main/m/makejail/makejail_0.0.5-10.dsc`
+** `dpkg-source -x makejail_0.0.5-10.dsc`
+* Branch `dev`
+** Python 3 version.
