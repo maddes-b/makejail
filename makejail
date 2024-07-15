@@ -37,7 +37,7 @@ class configClass:
 		self.sleepAfterKillall=1
 		self.sleepAfterStraceAttachPid=0.2
 		self.maxRemove=500
-   		self.keepStraceOutputs=0
+		self.keepStraceOutputs=0
 		self.promptForInteractiveTests=0
 		self.promptForSomeMoreTests=0
 		self.users=[]
@@ -47,9 +47,9 @@ class configClass:
 		self.etcFile="/etc/makejail/makejail.conf"
 		self.pathToLdConfig="/sbin/ldconfig"
 		# For Ubuntu systems, to prevent copying a bash shell
-                # we copy ldconfig.real instead
-                if os.path.exists("/sbin/ldconfig.real"):
-                    self.pathToLdConfig="/sbin/ldconfig.real"
+		# we copy ldconfig.real instead
+		if os.path.exists("/sbin/ldconfig.real"):
+			self.pathToLdConfig="/sbin/ldconfig.real"
 		self.pathToLdSoConf="/etc/ld.so.conf"
 		self.pathToLdSoCache="/etc/ld.so.cache"
 		self.procPath="/proc"
@@ -71,7 +71,7 @@ class configClass:
 		self.stracePatterns=['.*\("([^"]*)",.*\) .*= -[0-9]* ENO.*',
 				     '.*\("([^"]*)",.*\) .*= -[0-9]* EACCES.*',
 				     'chdir\("([^"]*)"\) .*= -[0-9]* ENO.*',
-				     'chdir\("([^"]*)"\) .*= -[0-9]* EACCESS.*'] 
+				     'chdir\("([^"]*)"\) .*= -[0-9]* EACCESS.*']
 
 		self.straceCreatePatterns=['.*\("([^"]*)",.*O_CREAT.*\) .* ENOENT .*',
 					   'bind\(.* path="([^"]*)".* ENOENT .*']
@@ -343,7 +343,7 @@ def addFileToJail(fileName):
 			mountProc()
 			procMounted=1
 		return []
- 	targetDirs=string.split(fileName[1:],"/")[:-1]
+	targetDirs=string.split(fileName[1:],"/")[:-1]
 	checkDir=""
 	for targetDir in targetDirs:
 		checkDir=checkDir+"/%s" % targetDir
@@ -539,7 +539,7 @@ def checkRequirements(file):
 				# reference the absolute path of the library
 				if string.find(line,"=>")==-1 and string.find(line,"/")==-1:
 					continue
-				if string.find(line,"=>")!=-1: 
+				if string.find(line,"=>")!=-1:
 					lib=string.strip(string.split(string.split(line,"=>")[1],"(")[0])
 				else:
 					lib=string.strip(string.split(line,"(")[0])
@@ -851,7 +851,7 @@ def makeChroot():
 	if not(os.path.isdir(config.chroot)):
 		sys.stderr.write("ERROR: The chroot location defined '%s' does not exist. Please create it and run makejail again.\n" % config.chroot)
 		sys.exit(1)
-		
+
 
 	# In the strace output, the command attempt to access
 	# the directory where this script was started outside
