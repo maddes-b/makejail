@@ -36,7 +36,7 @@ class configClass:
 		self.sleepAfterKillall=1
 		self.sleepAfterStraceAttachPid=0.2
 		self.maxRemove=500
-   		self.keepStraceOutputs=0
+		self.keepStraceOutputs=0
 		self.promptForInteractiveTests=0
 		self.promptForSomeMoreTests=0
 		self.users=[]
@@ -322,7 +322,7 @@ def addFileToJail(fileName):
 			mountProc()
 			procMounted=1
 		return []
- 	targetDirs=string.split(fileName[1:],"/")[:-1]
+	targetDirs=string.split(fileName[1:],"/")[:-1]
 	checkDir=""
 	for targetDir in targetDirs:
 		checkDir=checkDir+"/%s" % targetDir
