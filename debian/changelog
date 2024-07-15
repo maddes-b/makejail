@@ -1,0 +1,173 @@
+makejail (0.0.5-10) unstable; urgency=low
+
+  * Reorder the call to shutil to ensure that the setuid bit is 
+    copied when making a jail, thanks to Charles Burgoyne for the
+    report and fix. (Closes: 661497) 
+  * examples/exim4.py: Add an example to chroot exim4 (largely untested)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@debian.org>  Sat, 03 Mar 2012 17:29:24 +0100
+
+makejail (0.0.5-9) unstable; urgency=low
+
+  * Fix pathname handling when the directory components include absolute
+    symlink. Thanks to Daiki Ueno for the patch (Closes: #570695).
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@debian.org>  Sat, 20 Mar 2010 12:49:51 +0100
+
+makejail (0.0.5-8) unstable; urgency=low
+
+  [ Changes by  Florian Grandel <jerico.dev@gmail.com ]
+  * Makejail default configuration now in /etc/makejail/makejail.conf
+    There is no conflict now with the /etc/makejail/ directory
+    and it is possible for the administrator to set defaults (Closes: #495112)
+  * Changed default for straceCommand/straceCommandPid to include child
+    threads (strace -ff)
+  * Changed default for doNotCopy for security reasons (added /proc)
+  * cleanJailFirst default now correctly documented, manual page now indicates
+  * that the default value for cleanJailFirst is
+    0 and not 1 (Closes: #495118) (closes: #495118)
+  * should now preserve POSIX attributes (closes: #310781), still
+    does not preserve ext2/ext3 attributes however
+  * now copies directory as a result of chdir by introducing additional
+    patterns to be processed in the strace (closes: #392773)
+  * now chowns copied files (closes: #495147)
+  * now correctly handles strace -ff (closes: #495277)
+  * fixes several lintian warnings
+  * updated policy version
+  * debian/rules: now builds the documentation (should not be included in
+    source)
+
+  [ Changes by Javier Fernandez-Sanguino ]
+  * Use debhelper compatibility version 5
+  * Check if /sbin/ldconfig.real exists (Ubuntu systems) and set
+    pathToLdConfig to /sbin/ldconfig.real to avoid
+    introducing bash in all jails. (LP: #263614, closes: #495116)
+  * Review documentation to fix a widespread typo in makejail
+    (librairies->libraries)
+  * Remove ISO-8859-1 encoding in examples/sshd.py as it prevented
+    it from being loaded in newer python versions due to issues
+    in enconding.
+  * Include the pam.d/common-* files in the example for sshd.
+  * Provides a more descriptive message if the target chroot directory does
+    not exist (Closes: #193087, #570607)
+  * Added Alexandre Ratti's documentation on how to setup a chrooted Apache
+    with makejail, credit him in debian/copyright and distribute the files
+    under the examples/ directory adjusting also the apache.py file.
+    (Closes: #171842)
+  * Add the Homepage location to debian/control as a pseudo-header
+  * Highlight in the manpage that the package is heavily patched
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Tue, 23 Feb 2010 00:51:25 +0100
+
+
+makejail (0.0.5-7) unstable; urgency=low
+
+  * Ldd output has now changed and some libraries might not include a '=>'
+    but, rather, the absolute path. Patch makejail so it handles those lines.
+    This helps it detect that it needs to install /lib/ld-linux.so.2
+    in the jail (Closes: #358975)
+  * Use shutil.copystat instead of the inline CopyStat function in order to
+    properly preserve setuid bits (Closes: #310781)
+  * Use Debhelper compatibility version 4
+  * Add /usr/sbin/rndc to the example makejail file for Bind (Closes: #259453)
+  * Unmount /proc if we will attempt to clean the Jail first so that
+    reruning makejail will not fail if /proc is mounted (Closes: #375130)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sun, 16 Jul 2006 17:28:08 +0200
+
+makejail (0.0.5-6) unstable; urgency=low
+
+  * Fix typo in manpage (Closes: #326537)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sun,  4 Sep 2005 16:14:18 +0200
+
+makejail (0.0.5-5) unstable; urgency=low
+
+  * Proper debian/copyright file.
+  * Moved Build-Depends to Build-Depends-Indep
+  * Fixed description
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Fri, 23 Jan 2004 18:04:49 +0100
+
+makejail (0.0.5-4) unstable; urgency=low
+
+  * Modified dependancies (Closes: #205944)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Wed, 20 Aug 2003 16:33:23 +0200
+
+makejail (0.0.5-3) unstable; urgency=low
+
+  * Now depends on python2.3 as asked for by python maintainers. 
+  * Removed 'stat | coreutils' from depends
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sun, 17 Aug 2003 12:45:33 +0200
+
+makejail (0.0.5-2) unstable; urgency=low
+
+  * Fixed doc.src so that groff does not give errors when reading
+    manpage.
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Fri,  9 May 2003 20:26:18 +0200
+
+makejail (0.0.5-1) unstable; urgency=low
+
+  * New upstream version. 
+  * Fixed python2ism (Closes: #188332)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Fri, 11 Apr 2003 01:13:11 +0200
+
+makejail (0.0.4-2) unstable; urgency=low
+
+  * Fixed typo s/makefail/makejail/ (Closes: #169692)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sun, 24 Nov 2002 23:31:29 +0100
+
+makejail (0.0.4-1) unstable; urgency=low
+
+  * New upstream release (integrates the fixes introduced in the 0.0.1-4
+    version)
+  * This version does not fix an unreported bug related to the use of
+    DebianInfoFile (it's called DebianInfoDir in one function)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Mon, 28 Oct 2002 19:28:38 +0100
+
+makejail (0.0.3-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Mon, 14 Oct 2002 17:29:36 +0200
+
+makejail (0.0.1-4) unstable; urgency=low
+
+  * Fixed makejail call to variable (Closes: #163187)
+  * Makedocs now called through python (Closes: #164068)
+  * Fixed Build-Depends to include python (used by makedocs)
+  * Changed tty in sshd.py to ttyp (Closes: #163189)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Mon, 14 Oct 2002 17:24:46 +0200
+
+makejail (0.0.1-3) unstable; urgency=low
+
+  * Changed depends: to coreutils (isn't this in Standard, the dependancy
+  is probably not needed) (Closes: #161446, #161898, #161321)
+  * Fixed typos in sshd configuration (Closes: #161684)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Mon, 23 Sep 2002 09:49:55 +0200
+
+makejail (0.0.1-2) unstable; urgency=low
+
+  * Added stat depends (Closes: #161321)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Wed, 18 Sep 2002 13:28:49 +0200
+
+makejail (0.0.1-1) unstable; urgency=low
+
+  * Initial Release.
+  * Fixed typo in makejail (librairies->libraries)
+  * Provided a sample sshd configuration file (currently in the
+  examples dir) not thoroughly tested.
+  * Fixed typo in makejail and in manpage (debianDpkgInfoDir)
+  * Fixed call in makejail (changed debianDpkgInfo to config.debianDpkg..)
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sat, 17 Aug 2002 11:36:37 +0200
+

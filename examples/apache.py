@@ -5,13 +5,20 @@ processNames=["apache"]
 # Eventually append here the commands which access some services
 # such as cgi or php scripts, database access, ...
 testCommandsOutsideJail=["wget -r --spider http://localhost/",
-						 "lynx --source https://localhost/"]
+			 "lynx --source https://localhost/"]
 
 preserve=["/var/www",
-		  "/var/log/apache",
-		  "/dev/log"]
+	  "/var/log/apache",
+	  "/dev/log"]
 users=["www-data"]
 groups=["www-data"]
+
+userFiles=["/etc/password",
+           "/etc/shadow"]
+groupFiles=["/etc/group",
+            "/etc/gshadow"]
+forceCopy=["/etc/hosts",
+           "/etc/mime.types"]
 
 # launch makejail
 #

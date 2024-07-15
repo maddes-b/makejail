@@ -1,0 +1,4 @@
+#
+# This package currently does not provide conffiles but will
+# probably do so in a near future (as soon as the examples/
+# subdir config files has been tested)

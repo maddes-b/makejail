@@ -1,6 +1,7 @@
 # Makefile for makejail
 
-prefix = /usr
+DESTDIR=/
+prefix = $(DESTDIR)/usr
 BIN_DIR = $(prefix)/sbin
 DOC_DIR = $(prefix)/share/doc/makejail
 MAN_DIR = $(prefix)/share/man/man8
@@ -14,11 +15,11 @@ DISTDIR = makejail
 
 .PHONY: install distclean
 
-all:
+all: docs
 	@echo "Usage: make [install|uninstall|docs|clean_docs]"
 
 docs:
-	./makedocs
+	python makedocs
 	docbook-to-man manpage.sgml > $(MAN_PAGE)
 
 install:
@@ -32,7 +33,7 @@ install:
 	cp doc/index.html $(HTML_DIR)
 	chmod 644 $(HTML_DIR)/index.html
 	if (test ! -d $(EXAMPLES_DIR)); then mkdir -p $(EXAMPLES_DIR) ; chmod 755 $(EXAMPLES_DIR) ; fi
-	cp -Rp examples/* $(EXAMPLES_DIR)
+	cp -a examples/* $(EXAMPLES_DIR)
 	chmod 644 $(EXAMPLES_DIR)/*
 	if (test ! -d $(MAN_DIR)); then mkdir -p $(MAN_DIR) ; chmod 755 $(MAN_DIR) ; fi
 	$(INSTALL) makejail.8 $(MAN_DIR)

@@ -18,7 +18,7 @@ The list of these files is built from several sources:
 - the files which belongs to a package and eventually the packages it requires.
 
 When a file is added into the jail:
-- the shared librairies it needs (given by ldd) are added too.
+- the shared libraries it needs (given by ldd) are added too.
 - upper directories are created if needed.
 - if the file is a symbolic link, the target is added too.
 - all the checks to determine what files a file needs are recursive.
@@ -39,7 +39,7 @@ The steps of makejail are:
 H1:Configuration files
 
 The file must be written in a correct python syntax. The good news is that the syntax is simple, and you can eventually write some python code to define the syntax.
-Some default directives may be defined in /etc/makejail, the configuration file given on the command line has predecence.
+Some default directives may be defined in /etc/makejail/makejail.conf, the configuration file given on the command line has predecence.
 All paths you use in the configuration file must be absolute.
 
 __MANMODE=2__
@@ -61,7 +61,7 @@ H3:testCommandsInsideJail
 
 The commands used to start the daemon, a good starting point may be the command used in the startup script in /etc/init.d
 
-Format: ["command1","command2"]
+Format: ["command1", "command2"]
 
 Default: []
 
@@ -69,7 +69,7 @@ H3:processNames
 
 The name of the runnning processes after the daemon has been started.
 
-Format: ["process1","process2"]
+Format: ["process1", "process2"]
 
 Default: []
 
@@ -81,7 +81,7 @@ H3:testCommandsOutsideJail
 
 The test commands which should be executed.
 
-Format: ["command1","command2"]
+Format: ["command1", "command2"]
 
 Default: []
 
@@ -118,16 +118,16 @@ H3:doNotCopy
 Do not copy the files matching these patterns according to the rules used by the Unix shell.
 No tilde expansion is done, but *, ?, and character ranges expressed with [] will be correctly matched.
 
-Format: ["path1","path2"]
+Format: ["path1", "path2"]
 
-Default: ["/usr/share/doc","/usr/share/info","/usr/share/man","/etc/fstab","/etc/mtab"]
+Default: ["/usr/share/doc", "/usr/share/info", "/usr/share/man", "/etc/fstab", "/etc/mtab", "/proc"]
 
 H3:forceCopy
 
 When initializing the jail, copy the files matching these patterns according to the rules used by the Unix shell.
 No tilde expansion is done, but *, ?, and character ranges expressed with [] will be correctly matched.
 
-Format: ["path1","path2"]
+Format: ["path1", "path2"]
 
 Default: []
 
@@ -137,14 +137,14 @@ Whether makejail should remove files in jail first.
 
 Format: 0 to do nothing or 1 to remove files from the jail.
 
-Default: 1
+Default: 0
 
 H3:preserve
 
 Useful only if cleanJailFirst=1, makejail won't remove files or directories if their path begins with one of the strings in this list.
 When updating a jail, you should for example put the locations of log files here.
 
-Format: ["path1","path2"]
+Format: ["path1", "path2"]
 
 Default: []
 
@@ -162,7 +162,7 @@ H3:users
 Makejail will filter the files listed in the directive userFiles and copy only lines matching these users, which means lines starting with "user:"
 You can use ["*"] to disable filtering and copy the whole file.
 
-Format: ["user1","user2"]
+Format: ["user1", "user2"]
 
 Default: []
 
@@ -171,7 +171,7 @@ H3:groups
 Makejail will filter the files listed in the directive groupFiles and copy only lines matching these groups, which means lines starting with "group:"
 You can use ["*"] to disable filtering and copy the whole file.
 
-Format: ["group1","group2"]
+Format: ["group1", "group2"]
 
 Default: []
 
@@ -219,7 +219,7 @@ H3:packages
 
 The name of the packages. It will copy the files which belongs to the package according to the file /var/lib/dpkg/info/$package.list.
 
-Format: ["package1","package2"]
+Format: ["package1", "package2"]
 
 Default: []
 
@@ -236,7 +236,7 @@ H3:blockDepends
 
 Useful only if useDepends=1, it prevents the installation of these packages even if dpkg says they are required.
 
-Format: ["package1","package2"]
+Format: ["package1", "package2"]
 
 Default: []
 
@@ -252,15 +252,15 @@ H2:Paths so specific files and commands
 
 H3:pathToLdConfig
 
-Path to the executable ldconfig, used to generate the shared librairies cache. ldconfig is executed in the jail to regenerate this cache.
+Path to the executable ldconfig, used to generate the shared libraries cache. ldconfig is executed in the jail to regenerate this cache.
 
 Format: "/path/to/ldconfig"
 
-Default: "/sbin/ldconfig"
+Default: "/sbin/ldconfig" (Debian), "/sbin/ldconfig.real" (Ubuntu)
 
 H3:pathToLdSoConf
 
-The path to the configuration files used by ldconfig, which says which directories should be scanned searching for shared librairies.
+The path to the configuration files used by ldconfig, which says which directories should be scanned searching for shared libraries.
 Set this to None if your system doesn't use such a file.
 
 Format: "/path/to/ld.so.conf"
@@ -269,7 +269,7 @@ Default: "/etc/ld.so.conf"
 
 H3:pathToLdSoCache
 
-The path to the shared librairies cache generated by ldconfig.
+The path to the shared libraries cache generated by ldconfig.
 
 Format: "/path/to/ld.so.cache"
 
@@ -287,17 +287,17 @@ H3:userFiles
 
 List of the files whose contents should be filtered, to keep only the users listed in the directive "users".
 
-Format: ["file1","file2]
+Format: ["file1", "file2]
 
-Default: ["/etc/passwd","/etc/shadow"]
+Default: ["/etc/passwd", "/etc/shadow"]
 
 H3:groupFiles
 
 List of the files whose contents should be filtered, to keep only the groups listed in the directive "groups".
 
-Format: ["file1","file2]
+Format: ["file1", "file2]
 
-Default:["/etc/group","/etc/gshadow"]
+Default:["/etc/group", "/etc/gshadow"]
 
 H3:tempDir
 
@@ -337,13 +337,13 @@ String describing the strace command when executing a command line. "%command" w
 
 Format: "strace_command [options] %command > %file"
 
-Default: "strace -f %command >/dev/null 2>>%file"
+Default: "strace -e trace=file,connect -e signal=none -f -ff -o %file %command >/dev/null 2>&1"
 
 H3:straceCommandPid
 
 String describing the strace command when attaching itself to a running process. "%pid" will be replaced by the id of the process to trace, and "%file" by the path to the temporary trace file.
 
-Format: "strace_command [options] %pid > %file"
+Format: "strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
 
 Default: "strace -f -p %pid >/dev/null 2>>%file"
 
@@ -384,26 +384,26 @@ H3:stracePatterns
 Regular expressions to detect a failed attempt at accessing a file.
 If the file exists outside the jail makejail will copy it into the jail.
 
-Format: ["regexp1","regexp2",["regexp3","regexp3 for the next line"]]
+Format: ["regexp1", "regexp2", ["regexp3", "regexp3 for the next line"]]
 
-Default: ['.*\("([^"]*)",.*\) .* ENOENT .*']
+Default: ['.*("([^"]*)",.*) .* ENOENT .*']
 
 H3:straceCreatePatterns
 
 Regular expressions to detect a failed attempt at creating a file.
 If the directory where the file should be created exists outside the jail, it will create it inside the jail.
 
-Format: ["regexp1","regexp2",["regexp3","regexp3 for the next line"]]
+Format: ["regexp1", "regexp2", ["regexp3", "regexp3 for the next line"]]
 
-Default: ['.*\("([^"]*)",.*O_CREAT.*\) .* ENOENT .*','bind\(.* path="([^"]*)".* ENOENT .*']
+Default: ['.*("([^"]*)",.*O_CREAT.*) .* ENOENT .*','bind(.* path="([^"]*)".* ENOENT .*']
 
 H3:straceSocketPatterns
 
 Regular expressions to detect a failed attempt at accessing a socket.
 makejail can't create the socket, it will just print a warning.
 
-Format: ["regexp1","regexp2",["regexp3","regexp3 for the next line"]]
+Format: ["regexp1", "regexp2", ["regexp3", "regexp3 for the next line"]]
 
-Default: ['connect\(.* path="([^"]*)".* ENOENT .*']
+Default: ['connect(.* path="([^"]*)".* ENOENT .*']
 
 __MANMODE=0__

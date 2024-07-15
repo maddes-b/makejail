@@ -94,8 +94,18 @@ __ENDLOOP(ITEMS)__
   </refsect1>
   <refsect1>
     <title>REPORTING BUGS</title>
-    <para>Report bugs to makejail@floc.net</para>
-  </refsect1>
+          <para>Makejail is heavily patched for Debian systems.
+          If you are using this program as part of the Debian
+          distribution you should report bugs to the Debian Bug Tracking System
+          using
+          submit@bugs.debian.org. For this you can use the
+          <command>reportbug</command> or <command>bug</command> program.
+          Please, read /usr/share/doc/debian/bug-reporting.txt
+          (or www.debian.org/Bugs) before doing so.</para>
+
+          <para>If you want to report bugs to the upstream maintainer use
+         makejail@floc.net</para>
+   </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # Author: alain@onesite.org
 # License: GPL
@@ -11,7 +11,7 @@
 # stat (package stat)
 
 # Configuration defaults
-# Don't change this file, to define new defaults values create a file /etc/makejail
+# Don't change this file, to define new defaults values create a file /etc/makejail/makejail.conf
 
 class configClass:
 	def __init__(self):
@@ -20,10 +20,11 @@ class configClass:
 		self.useDepends=0
 		self.blockDepends=[]
 		self.doNotCopy=["/usr/share/doc",
-						"/usr/share/info",
-						"/usr/share/man",
-						"/etc/fstab",
-						"/etc/mtab"]
+				"/usr/share/info",
+				"/usr/share/man",
+				"/etc/fstab",
+				"/etc/mtab",
+				"/proc"]
 		self.forceCopy=[]
 		self.cleanJailFirst=0
 		self.preserve=[]
@@ -36,37 +37,44 @@ class configClass:
 		self.sleepAfterKillall=1
 		self.sleepAfterStraceAttachPid=0.2
 		self.maxRemove=500
-		self.keepStraceOutputs=0
+   		self.keepStraceOutputs=0
 		self.promptForInteractiveTests=0
 		self.promptForSomeMoreTests=0
 		self.users=[]
 		self.groups=[]
 
 		self.debianDpkgInfoFile="/var/lib/dpkg/info/%s.list"
-		self.etcFile="/etc/makejail"
+		self.etcFile="/etc/makejail/makejail.conf"
 		self.pathToLdConfig="/sbin/ldconfig"
+		# For Ubuntu systems, to prevent copying a bash shell
+                # we copy ldconfig.real instead
+                if os.path.exists("/sbin/ldconfig.real"):
+                    self.pathToLdConfig="/sbin/ldconfig.real"
 		self.pathToLdSoConf="/etc/ld.so.conf"
 		self.pathToLdSoCache="/etc/ld.so.cache"
 		self.procPath="/proc"
 		self.userFiles=["/etc/passwd",
-						"/etc/shadow",
-						"/etc/master.passwd"]
+				"/etc/shadow",
+				"/etc/master.passwd"]
 		self.groupFiles=["/etc/group",
-						 "/etc/gshadow"]
+				 "/etc/gshadow"]
 		self.tempDir="/tmp/makejail_logs"
 
 		self.psCommand="ps -e"
 		self.psColumns=[1,4]
 
 		# -e file=trace doesn't catch socket connections
-		self.straceCommand="strace -f %command >/dev/null 2>>%file"
-		self.straceCommandPid="strace -f -p %pid >/dev/null 2>>%file"
+		self.straceCommand="strace -e trace=file,connect -e signal=none -f -ff -o %file %command >/dev/null 2>&1"
+		self.straceCommandPid="strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
 		self.straceCommandStop="killall -9 strace"
 		self.straceCommandView=None
 		self.stracePatterns=['.*\("([^"]*)",.*\) .*= -[0-9]* ENO.*',
-							 '.*\("([^"]*)",.*\) .*= -[0-9]* EACCES.*']
+				     '.*\("([^"]*)",.*\) .*= -[0-9]* EACCES.*',
+				     'chdir\("([^"]*)"\) .*= -[0-9]* ENO.*',
+				     'chdir\("([^"]*)"\) .*= -[0-9]* EACCESS.*'] 
+
 		self.straceCreatePatterns=['.*\("([^"]*)",.*O_CREAT.*\) .* ENOENT .*',
-								   'bind\(.* path="([^"]*)".* ENOENT .*']
+					   'bind\(.* path="([^"]*)".* ENOENT .*']
 		self.straceSocketPatterns=['connect\(.* path="([^"]*)".* ENOENT .*']
 
 # Global variables
@@ -220,10 +228,23 @@ def readFileLines(fileName):
 def dpkgInfoFiles(package):
 	return readFileLines(config.debianDpkgInfoFile % package)
 
-def copyStat(source,target):
+def copyStatAndOwner(source,target):
+	# Copy user/group info
 	statInfos=os.stat(source)
-	os.chmod(target,statInfos[stat.ST_MODE])
 	os.chown(target,statInfos[stat.ST_UID],statInfos[stat.ST_GID])
+
+	# Keep all attributes
+	shutil.copystat(source,target)
+
+def unmountProc():
+	debug("Unmounting %s" % config.procPath)
+	moveIndent(1)
+	returnCode=os.system("umount -t proc %s%s" % (config.chroot,config.procPath))
+	if returnCode==0:
+		debug("%s unmounted successfully" % config.procPath)
+	else:
+		abort("Unable to unmount %s" % config.procPath)
+	moveIndent(-1)
 
 def mountProc():
 	debug("Mounting %s" % config.procPath)
@@ -322,7 +343,7 @@ def addFileToJail(fileName):
 			mountProc()
 			procMounted=1
 		return []
-	targetDirs=string.split(fileName[1:],"/")[:-1]
+ 	targetDirs=string.split(fileName[1:],"/")[:-1]
 	checkDir=""
 	for targetDir in targetDirs:
 		checkDir=checkDir+"/%s" % targetDir
@@ -332,7 +353,14 @@ def addFileToJail(fileName):
 			moveIndent(1)
 			addFileToJail(checkDir)
 			moveIndent(-1)
-	fileInChroot="%s%s" % (config.chroot,fileName)
+	# The directory part of fileName may be a symlink to an
+	# absolute pathname.  For example, fileName is
+	# "lib64/ld-linux.so.2" where "lib64" is a symlink to "/lib".
+	# In that case it should be resolved before constructing
+	# fileInChroot.  See http://bugs.debian.org/570695.
+	fileDir, baseName = os.path.split(fileName)
+	fileInChroot=os.path.join(config.chroot,os.path.realpath(fileDir)[1:],
+				  baseName)
 	if os.path.exists(fileInChroot):
 		if fileIsNewer(fileName,fileInChroot):
 			debug("   File %s is newer than the %s, overwriting" % (fileName,fileInChroot))
@@ -352,7 +380,9 @@ def addFileToJail(fileName):
 			absoluteLinkTarget="%s/%s" % (fileDir,linkTarget)
 		newFiles=addFileToJail(absoluteLinkTarget)
 		missingFiles=missingFiles+newFiles
-		newWorkingDir="%s/%s" % (config.chroot,fileDir[1:])
+		# newWorkingDir may be a symlink to an absolute
+		# pathname.  See the above comment.
+		newWorkingDir="%s/%s" % (config.chroot,os.path.realpath(fileDir)[1:])
 		os.chdir(newWorkingDir)
 		debug("   Creating '%s' as a symlink to '%s' (pwd=%s)" % (fileName[1:],linkTarget,newWorkingDir))
 		os.symlink(linkTarget,os.path.split(fileName)[1])
@@ -400,9 +430,13 @@ def addFileToJail(fileName):
 		addPasswdFile(fileName,"groups")
 	else:
 		debug("   Copying %s -> %s" % (fileName,fileInChroot))
-		shutil.copyfile(fileName,fileInChroot)
+		# Copy the file
+		shutil.copy(fileName,fileInChroot)
+		shutil.copystat(fileName,fileInChroot)
 		missingFiles.append(fileName)
-	copyStat(fileName,fileInChroot)
+
+	copyStatAndOwner(fileName,fileInChroot)
+
 	if os.path.isfile(fileName):
 		checkRequirements(fileName)
 	return missingFiles
@@ -440,7 +474,7 @@ def execute(command):
 				chunk=files[i].read()
 				if chunk=="":
 					finished[i]=1
-				feedbackQueues[i]+=chunk
+				feedbackQueues[i]=feedbackQueues[i]+chunk
 		for i in (0,1):
 			while "\n" in feedbackQueues[i]:
 				pos=feedbackQueues[i].find("\n")
@@ -501,9 +535,14 @@ def checkRequirements(file):
 			for line in ldd_lines:
 				if not(line):
 					continue
-				if string.find(line,"=>")==-1:
+				# Not all ldd lines include => they might
+				# reference the absolute path of the library
+				if string.find(line,"=>")==-1 and string.find(line,"/")==-1:
 					continue
-				lib=string.strip(string.split(string.split(line,"=>")[1],"(")[0])
+				if string.find(line,"=>")!=-1: 
+					lib=string.strip(string.split(string.split(line,"=>")[1],"(")[0])
+				else:
+					lib=string.strip(string.split(line,"(")[0])
 				addFileToJail(lib)
 			moveIndent(-1)
 	moveIndent(-1)
@@ -615,8 +654,6 @@ def sleep(delay):
 def addMissingFilesFromProcess(items,testCommandsOutsideJail=[]):
 
 	straceTempFileName=tempfile.mktemp("trace")
-	straceTempFile=open(straceTempFileName,"w")
-	straceTempFile.close()
 
 	if not(type(items) in (types.ListType,types.TupleType)):
 		items=[items]
@@ -659,6 +696,13 @@ def addMissingFilesFromProcess(items,testCommandsOutsideJail=[]):
 		if line:
 			out.append(line)
 	debug(string.join(out," "))
+
+	# Join the generated pid-specific trace files (strace -ff) into one single trace file
+	# If there are no such files the following lines should do nothing.
+	debug("Joining pid-specific trace files (if any)...")
+	command=string.replace("cat %file.* >>%file 2>/dev/null","%file",straceTempFileName)
+	os.system(command)
+	os.system("rm -f %s.* >/dev/null 2>/dev/null" % straceTempFileName)
 
 	if config.straceCommandView:
 		command=string.replace(config.straceCommandView,"%file",straceTempFileName)
@@ -804,6 +848,10 @@ def makeChroot():
 	global tmpOut
 
 	debug("Chroot directory is %s" % config.chroot)
+	if not(os.path.isdir(config.chroot)):
+		sys.stderr.write("ERROR: The chroot location defined '%s' does not exist. Please create it and run makejail again.\n" % config.chroot)
+		sys.exit(1)
+		
 
 	# In the strace output, the command attempt to access
 	# the directory where this script was started outside
@@ -823,6 +871,9 @@ def makeChroot():
 
 	killall(config.processNames)
 	if config.cleanJailFirst:
+		# We have to umount /proc before we proceed
+		if os.path.isdir(config.chroot+config.procPath):
+			unmountProc()
 		cleanJail()
 
 	# === Add packages
@@ -949,8 +1000,8 @@ def loadConfig(file):
 	except:
 		if fp:
 			fp.close()
-		sys.stderr.write("Cannot load configuration file '%s' as a python module\n" % file)
-		sys.stderr.write("Executing it with python which should display a syntax error:\n")
+		sys.stderr.write("ERROR: Cannot load configuration file '%s' as a python module\n" % file)
+		sys.stderr.write("ERROR: Executing it with python which should display a syntax error:\n")
 		os.system("python %s" % file)
 		sys.exit(1)
 
@@ -984,7 +1035,7 @@ if __name__=="__main__":
 	try:
 		configFile=sys.argv[1]
 	except IndexError:
-		abort("Usage: %s configFile" % sys.argv[0])
+		abort("Usage: %s package\n\tpackage is the name of an installed package\n\t(a configuration file must exist in %s)" % (sys.argv[0],config.etcFile))
 
 	if os.path.isfile(config.etcFile):
 		loadConfig(config.etcFile)

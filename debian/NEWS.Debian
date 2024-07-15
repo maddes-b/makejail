@@ -1,0 +1,21 @@
+makejail (0.0.5-9) unstable; urgency=low
+
+  This release of makejail changes some configuration defaults, either for
+  security or to close bugs. If you want to maintain compatibility then please
+  create a file /etc/makejail/makejail.conf with the following entries:
+
+  -----------------------------------------------------------------------
+  doNotCopy=["/usr/share/doc", "/usr/share/info", "/usr/share/man",
+         "/etc/fstab", "/etc/mtab"]
+  straceCommand="strace -e trace=file,connect -e signal=none -f -ff
+         -o %file %command >/dev/null 2>&1"
+  straceCommandPid="strace -e trace=file,connect -e signal=none -f
+         -ff -o %file -p %pid >/dev/null 2>&1"
+  -----------------------------------------------------------------------
+
+  Also, this release changes the default configuration file. It is 
+  located now in /etc/makejail/makejail.conf. The old 
+  configuration file (/etc/makejail) will be moved transparently over
+  to the new location.
+
+ -- Javier Fernandez-Sanguino Pen~a <jfs@debian.org>  Mon, 22 Feb 2010 23:48:25 +0100
