@@ -379,7 +379,7 @@ def addFileToJail(fileName):
 			debug("   %s has just been mounted" % config.procPath)
 		else:
 			os.mkdir("%s%s" % (config.chroot, config.procPath))
-			os.chmod("%s%s" % (config.chroot, config.procPath), 0555)
+			os.chmod("%s%s" % (config.chroot, config.procPath), 0o0555)
 			mountProc()
 			procMounted = 1
 		return []
