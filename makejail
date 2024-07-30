@@ -112,7 +112,8 @@ archs = []
 
 import stat
 import sys
-#import imp # library 'imp' removed in 3.12
+import importlib.util # library 'imp' removed in 3.12
+import importlib.machinery # library 'imp' removed in 3.12
 import os
 import shutil
 #import popen2 # library 'popen2' removed in 3.0
@@ -1038,21 +1039,22 @@ def loadConfig(file):
 
 	try:
 		assert os.path.isfile(file)
-		fp = open(file, "r")
 	except:
 		abort("Cannot open configuration file '%s'" % file)
 
-	if ("/" in configFile):
-		dir = string.join(string.split(file, "/")[:-1], "/")
+	if ("/" in file):
+		dir = "/".join(file.split("/")[:-1])
 		if dir[0] != "/":
 			dir = "%s/%s" % (os.getcwd(), dir)
 		sys.path.insert(0, dir)
 
 	try:
-		newConfig = imp.load_module("newConfig%s" % file, fp, file, ("", "r", 1))
+		importlib.machinery.SOURCE_SUFFIXES.append('') # empty string to allow any file
+		spec = importlib.util.spec_from_file_location("newConfig%s" % file, file)
+		newConfig = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(newConfig)
+		importlib.machinery.SOURCE_SUFFIXES.pop()
 	except:
-		if fp:
-			fp.close()
 		sys.stderr.write("ERROR: Cannot load configuration file '%s' as a python module\n" % file)
 		sys.stderr.write("ERROR: Executing it with python which should display a syntax error:\n")
 		os.system("python3 %s" % file)
@@ -1063,21 +1065,17 @@ def loadConfig(file):
 	if os.path.isfile(bcFile):
 		os.unlink(bcFile)
 
-	if fp:
-		fp.close()
-
-	for key in newConfig.__dict__.keys():
+	for key, value in newConfig.__dict__.items():
 		if key[:2] == "__":
 			continue
 		if not(key in config.__dict__):
 			abort("Invalid configuration key '%s'" % key)
-		s = newConfig.__dict__[key]
-		if isinstance(s, str):
-			s = "'%s'" % s
+		if isinstance(value, str):
+			s = "'%s'" % value
 		else:
-			s = "%s" % s
+			s = "%s" % value
 		debug("Defining %s = %s" % (key, s))
-		config.__dict__[key] = newConfig.__dict__[key]
+		config.__dict__[key] = value
 
 	moveIndent(-1)
 
