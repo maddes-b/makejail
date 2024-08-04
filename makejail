@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8; tab-width: 4; -*-
 
 # Authors:
+#   Matthias "Maddes" Bücher <maddes+debian@maddes.net> - conversion to Python 3.5
 #   Javier Fernandez-Sanguino Peña <jfs@debian.org> - author of Debian version
 #   Alain Tésio <alain@onesite.org> - original author
 # Contributors:
@@ -111,12 +112,11 @@ archs = []
 
 import stat
 import sys
-import imp
+#import imp # library 'imp' removed in 3.12
 import string
 import os
 import shutil
-import types
-import popen2
+#import popen2 # library 'popen2' removed in 3.0
 import tempfile
 import re
 import glob
@@ -147,7 +147,7 @@ def abort(s):
 def compileRegExp(pattern):
 	global compiledRegExps
 
-	if compiledRegExps.has_key(pattern):
+	if pattern in compiledRegExps:
 		compiled = compiledRegExps[pattern]
 	else:
 		compiled = re.compile(pattern)
@@ -160,7 +160,7 @@ def matchPattern(pattern, line, nextLine=None):
 	# only if the next line matches the second pattern
 	if pattern == None:
 		return None
-	elif type(pattern) == types.StringType:
+	elif isinstance(pattern, str):
 		matchobject = compileRegExp(pattern).match(line)
 		if matchobject:
 			return matchobject.groups()[0]
@@ -256,7 +256,7 @@ def readFileLines(fileName):
 		abort("Cannot read file '%s'" % fileName)
 	lines = f.readlines()
 	f.close()
-	return map(string.strip, lines)
+	return list(map(string.strip, lines))
 
 
 def dpkgInfoFiles(packagename):
@@ -345,7 +345,7 @@ def addFileToJail(fileName):
 	if not(fileName):
 		return []
 	missingFiles = []
-	if installedFiles.has_key(fileName):
+	if fileName in installedFiles:
 		return []
 	debug("Checking path '%s'" % fileName)
 	if fileName == config.pathToLdSoCache:
@@ -489,11 +489,7 @@ def fileReadlines(fileName):
 
 def makeNonBlocking(fd):
 	fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-	try:
-		fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NDELAY)
-	except AttributeError:
-		import FCNTL
-		fcntl.fcntl(fd, fcntl.F_SETFL, fl | FCNTL.FNDELAY)
+	fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NDELAY)
 
 
 def execute(command):
@@ -508,7 +504,7 @@ def execute(command):
 	feedbackStreams = (sys.stdout, sys.stderr)
 	feedbackQueues = ["", ""]
 	finished = [0, 0]
-	while 1:
+	while True:
 		ready = select.select(fds, [], [])
 		for i in (0, 1):
 			if fds[i] in ready[0]:
@@ -568,7 +564,7 @@ def checkRequirements(file):
 		if shared:
 			moveIndent(1)
 			debug("%s, checking the required libraries with ldd" % shared)
-			ldd_lines = map(string.strip, execute("ldd %s" % file))
+			ldd_lines = list(map(string.strip, execute("ldd %s" % file)))
 			ignoreStrings = [
 				"not a dynamic executable",
 				"statically linked",
@@ -669,7 +665,7 @@ def addMissingFilesFromStraceLines(lines):
 				continue
 
 		missingFile = matchPatterns(config.straceSocketPatterns, line, nextLine)
-		if missingFile and not(installedFiles.has_key(missingFile)):
+		if missingFile and not(missingFile in installedFiles):
 			try:
 				statMode = os.stat(missingFile)[stat.ST_MODE]
 			except:
@@ -705,15 +701,15 @@ def sleep(delay):
 def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 	straceTempFileName = tempfile.mktemp("trace")
 
-	if not(type(items) in (types.ListType, types.TupleType)):
+	if not(isinstance(items, (list, tuple))):
 		items = [items]
 
 	for item in items:
-		if type(item) in (types.IntType, types.LongType):
+		if isinstance(item, int):
 			command = config.straceCommandPid
 			command = string.replace(command, "%pid", str(item))
 			s = "Tracing process %i" % item
-		elif type(item) == types.StringType:
+		elif isinstance(item, str):
 			command = config.straceCommand
 			command = string.replace(command, "%command", item)
 			s = "Tracing command %s" % item
@@ -722,17 +718,17 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 		command = string.replace(command, "%file", straceTempFileName)
 		debug(s)
 		os.system("%s &" % command)
-		if type(item) == types.StringType:
+		if isinstance(item, str):
 			sleep(config.sleepAfterStartCommand)
 		else:
 			sleep(config.sleepAfterStraceAttachPid)
 
 	if testCommandsOutsideJail:
-		if not(type(testCommandsOutsideJail in (types.ListType, types.TupleType))):
+		if not(isinstance(testCommandsOutsideJail, (list, tuple))):
 			testCommandsOutsideJail = [testCommandsOutsideJail]
 		for testCommand in testCommandsOutsideJail:
 			if testCommand == "interactive":
-				raw_input("Interactive tests: press Enter when complete")
+				input("Interactive tests: press Enter when complete")
 			else:
 				debug("Executing test command '%s' ..." % testCommand)
 				returnCode = os.system("%s >/dev/null 2>/dev/null" % testCommand)
@@ -740,7 +736,7 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 				sleep(config.sleepAfterTest)
 
 	debug("Stopping tracing ... ", endLine=0)
-	lines = map(string.strip, execute(config.straceCommandStop))
+	lines = list(map(string.strip, execute(config.straceCommandStop)))
 	out = []
 	for line in lines:
 		if line:
@@ -775,7 +771,7 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 
 
 def killall(processNames):
-	if type(processNames) == types.StringType:
+	if isinstance(processNames, str):
 		processNames = [processNames]
 	if len(processNames) == 1:
 		s = "named '%s'" % processNames[0]
@@ -785,7 +781,7 @@ def killall(processNames):
 		debug("Killing processes %s ... : " % s, endLine=0)
 		pids = commandPids(processNames)
 		if len(pids):
-			debug(string.join(map(str, pids), ","))
+			debug(string.join(list(map(str, pids)), ","))
 			for pid in pids:
 				out = execute("kill -9 %i 2>&1" % pid)
 			sleep(config.sleepAfterKillall)
@@ -814,7 +810,7 @@ def debianGetDepends(package):
 
 
 def tryExecute(commands):
-	if type(commands) == types.StringType:
+	if isinstance(commands, str):
 		commands = [commands]
 	for command in commands:
 		debug("Executing command '%s' (pwd=%s)" % (command, config.tempDir), endLine=0)
@@ -903,7 +899,7 @@ def displayWarnings():
 						]
 		else:
 			abort("No method to display the warning '%s'" % warningType)
-		sys.stdout.write("\nWARNING:\n%s\n" % string.join(map(lambda l: "   %s" % l, s), "\n"))
+		sys.stdout.write("\nWARNING:\n%s\n" % string.join(["   %s" % l for l in s], "\n"))
 
 
 def initRunningPids():
@@ -1004,7 +1000,7 @@ def makeChroot():
 		if config.promptForSomeMoreTests:
 			prompt="Paused to give you a chance to fix some problems, do you want to run tests again (y/n) ? "
 			while prompt:
-				yesNo = string.lower(raw_input(prompt))
+				yesNo = string.lower(input(prompt))
 				if yesNo == "y":
 					continueTests = 1
 					prompt = None
@@ -1071,7 +1067,7 @@ def loadConfig(file):
 			fp.close()
 		sys.stderr.write("ERROR: Cannot load configuration file '%s' as a python module\n" % file)
 		sys.stderr.write("ERROR: Executing it with python which should display a syntax error:\n")
-		os.system("python %s" % file)
+		os.system("python3 %s" % file)
 		sys.exit(1)
 
 	# Remove byte-compile file
@@ -1085,10 +1081,10 @@ def loadConfig(file):
 	for key in newConfig.__dict__.keys():
 		if key[:2] == "__":
 			continue
-		if not(config.__dict__.has_key(key)):
+		if not(key in config.__dict__):
 			abort("Invalid configuration key '%s'" % key)
 		s = newConfig.__dict__[key]
-		if type(s) == types.StringType:
+		if isinstance(s, str):
 			s = "'%s'" % s
 		else:
 			s = "%s" % s
