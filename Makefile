@@ -20,7 +20,7 @@ all: docs
 	@echo "Usage: make [install|uninstall|docs|clean_docs]"
 
 docs:
-	python makedocs
+	python3 makedocs
 	docbook-to-man $(MAN_PAGE_SGML) > $(MAN_PAGE)
 
 install:

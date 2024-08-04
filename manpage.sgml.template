@@ -43,6 +43,10 @@ manpage.1: manpage.sgml
       <year>2002-2012</year>
       <holder>Javier Fernandez-Sanguino Peña</holder>
     </copyright>
+    <copyright>
+      <year>2024</year>
+      <holder>Matthias "Maddes" Bücher</holder>
+    </copyright>
     &dhdate;
   </refentryinfo>
   <refmeta>
@@ -99,16 +103,12 @@ __ENDLOOP(ITEMS)__
   <refsect1>
     <title>REPORTING BUGS</title>
     <para>Makejail is heavily patched for Debian systems.
-    If you are using this program as part of the Debian
-    distribution you should report bugs to the Debian Bug Tracking System
-    using
-    submit@bugs.debian.org. For this you can use the
-    <command>reportbug</command> or <command>bug</command> program.
+    you want to report bugs to the maintainers check out
+    https://github.com/maddes-b/makejail/issues?q=
+    For this you can use the <command>reportbug</command>
+    or <command>bug</command> program.
     Please, read /usr/share/doc/debian/bug-reporting.txt
     (or www.debian.org/Bugs) before doing so.</para>
-
-    <para>If you want to report bugs to the upstream maintainer use
-    makejail@floc.net</para>
   </refsect1>
 </refentry>
 

@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8; tab-width: 4; -*-
 
 # Authors:
+#   Matthias "Maddes" Bücher <maddes+debian@maddes.net> - conversion to Python 3.5
 #   Javier Fernandez-Sanguino Peña <jfs@debian.org> - author of Debian version
 #   Alain Tésio <alain@onesite.org> - original author
 # Contributors:
@@ -95,9 +96,9 @@ class configClass:
 
 
 # Global variables
-needLdCache = 0
+needLdCache = False
 warnings = []
-procMounted = 0
+procMounted = False
 compiledRegExps = {}
 installedPackages = []
 installedFiles = {}
@@ -110,12 +111,11 @@ archs = []
 
 import stat
 import sys
-import imp
+#import imp # library 'imp' removed in 3.12
 import string
 import os
 import shutil
-import types
-import popen2
+#import popen2 # library 'popen2' removed in 3.0
 import tempfile
 import re
 import glob
@@ -131,7 +131,7 @@ os.environ["LANG"] = "C"
 def moveIndent(direction):
 	global indentLevel
 
-	indentLevel = indentLevel + direction
+	indentLevel += direction
 
 
 def debug(s, endLine=1):
@@ -146,7 +146,7 @@ def abort(s):
 def compileRegExp(pattern):
 	global compiledRegExps
 
-	if compiledRegExps.has_key(pattern):
+	if pattern in compiledRegExps:
 		compiled = compiledRegExps[pattern]
 	else:
 		compiled = re.compile(pattern)
@@ -159,7 +159,7 @@ def matchPattern(pattern, line, nextLine=None):
 	# only if the next line matches the second pattern
 	if pattern == None:
 		return None
-	elif type(pattern) == types.StringType:
+	elif isinstance(pattern, str):
 		matchobject = compileRegExp(pattern).match(line)
 		if matchobject:
 			return matchobject.groups()[0]
@@ -194,27 +194,27 @@ def cleanDir(queue, dir):
 	# test inode for hardlink
 	debug("Entering directory %s" % dir)
 	moveIndent(1)
-	keepUpperDir = 0
+	keepUpperDir = False
 	files = os.listdir(dir)
 	for file in files:
 		file = "%s/%s" % (dir, file)
-		doNotTouchThat = 0
+		doNotTouchThat = False
 		for path in config.preserve:
 			if startslike(file, "%s%s" % (config.chroot, path)):
-				doNotTouchThat = 1
+				doNotTouchThat = True
 				break
 		if doNotTouchThat:
 			debug("Preserving %s" % file)
-			keepUpperDir = 1
+			keepUpperDir = True
 			continue
-		keepThisDir = 0
+		keepThisDir = False
 		if os.path.isdir(file) and not(os.path.islink(file)) and file != config.chroot:
 			if file == "%s%s" % (config.chroot, config.procPath):
 				debug("%s : mount point, do not try removing files deeper" % config.procPath)
 			else:
 				if cleanDir(queue, file):
-					keepThisDir = 1
-					keepUpperDir = 1
+					keepThisDir = True
+					keepUpperDir = True
 		if keepThisDir:
 			if file != "%s%s" % (config.chroot, config.procPath):
 				debug("   Not queueing for remove %s, some paths to preserve below" % file)
@@ -255,7 +255,7 @@ def readFileLines(fileName):
 		abort("Cannot read file '%s'" % fileName)
 	lines = f.readlines()
 	f.close()
-	return map(string.strip, lines)
+	return list(map(string.strip, lines))
 
 
 def dpkgInfoFiles(packagename):
@@ -344,19 +344,19 @@ def addFileToJail(fileName):
 	if not(fileName):
 		return []
 	missingFiles = []
-	if installedFiles.has_key(fileName):
+	if fileName in installedFiles:
 		return []
 	debug("Checking path '%s'" % fileName)
 	if fileName == config.pathToLdSoCache:
 		installedFiles[fileName] = -1
 		debug("   Shared libs cache file %s marked as needed, it will be generated at the end" % config.pathToLdSoCache)
-		needLdCache = 1
+		needLdCache = True
 		return []
 	if config.doNotCopy:
-		ignored = 0
+		ignored = False
 		for ignorePath in config.doNotCopy:
 			if startslike(fileName, ignorePath):
-				ignored = 1
+				ignored = True
 				break
 		if ignored:
 			debug("   Ignoring because of doNotCopy directive: %s" % fileName)
@@ -380,12 +380,12 @@ def addFileToJail(fileName):
 			os.mkdir("%s%s" % (config.chroot, config.procPath))
 			os.chmod("%s%s" % (config.chroot, config.procPath), 0o0555)
 			mountProc()
-			procMounted = 1
+			procMounted = True
 		return []
 	targetDirs = string.split(fileName[1:], os.sep)[:-1]
 	checkDir = ""
 	for targetDir in targetDirs:
-		checkDir = checkDir + "/%s" % targetDir
+		checkDir += "/%s" % targetDir
 		fileInChroot = "%s%s" % (config.chroot, checkDir)
 		if not(os.path.isdir(fileInChroot)):
 			debug("   Dir '%s' missing" % fileInChroot)
@@ -417,7 +417,7 @@ def addFileToJail(fileName):
 		else:
 			absoluteLinkTarget = "%s/%s" % (fileDir, linkTarget)
 		newFiles = addFileToJail(absoluteLinkTarget)
-		missingFiles = missingFiles + newFiles
+		missingFiles += newFiles
 		# newWorkingDir may be a symlink to an absolute
 		# pathname.  See the above comment.
 		newWorkingDir = "%s/%s" % (config.chroot, os.path.realpath(fileDir)[1:])
@@ -488,11 +488,7 @@ def fileReadlines(fileName):
 
 def makeNonBlocking(fd):
 	fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-	try:
-		fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NDELAY)
-	except AttributeError:
-		import FCNTL
-		fcntl.fcntl(fd, fcntl.F_SETFL, fl | FCNTL.FNDELAY)
+	fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NDELAY)
 
 
 def execute(command):
@@ -506,22 +502,22 @@ def execute(command):
 	datas = [[], []]
 	feedbackStreams = (sys.stdout, sys.stderr)
 	feedbackQueues = ["", ""]
-	finished = [0, 0]
-	while 1:
+	finished = [False, False]
+	while True:
 		ready = select.select(fds, [], [])
 		for i in (0, 1):
 			if fds[i] in ready[0]:
 				chunk = files[i].read()
 				if chunk == "":
-					finished[i] = 1
-				feedbackQueues[i] = feedbackQueues[i] + chunk
+					finished[i] = True
+				feedbackQueues[i] += chunk
 		for i in (0, 1):
 			while "\n" in feedbackQueues[i]:
 				pos = feedbackQueues[i].find("\n")
 				line = feedbackQueues[i][:pos+1]
 				datas[i].append(line[:-1])
 				feedbackQueues[i] = feedbackQueues[i][pos+1:]
-		if finished == [1, 1]:
+		if finished == [True, True]:
 			break
 		select.select([], [], [], .05)
 	errCode = child.wait()
@@ -567,7 +563,7 @@ def checkRequirements(file):
 		if shared:
 			moveIndent(1)
 			debug("%s, checking the required libraries with ldd" % shared)
-			ldd_lines = map(string.strip, execute("ldd %s" % file))
+			ldd_lines = list(map(string.strip, execute("ldd %s" % file)))
 			ignoreStrings = [
 				"not a dynamic executable",
 				"statically linked",
@@ -645,9 +641,9 @@ def addMissingFilesFromStraceLines(lines):
 				continue
 			try:
 				statInfos = os.stat(missingFile)
-				fileExists = 1
+				fileExists = True
 			except OSError:
-				fileExists = 0
+				fileExists = False
 			if fileExists:
 				moveIndent(1)
 				if addFileToJail(missingFile):
@@ -668,7 +664,7 @@ def addMissingFilesFromStraceLines(lines):
 				continue
 
 		missingFile = matchPatterns(config.straceSocketPatterns, line, nextLine)
-		if missingFile and not(installedFiles.has_key(missingFile)):
+		if missingFile and not(missingFile in installedFiles):
 			try:
 				statMode = os.stat(missingFile).st_mode
 			except:
@@ -698,15 +694,15 @@ def sleep(delay):
 def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 	straceTempFileName = tempfile.mktemp("trace")
 
-	if not(type(items) in (types.ListType, types.TupleType)):
+	if not(isinstance(items, (list, tuple))):
 		items = [items]
 
 	for item in items:
-		if type(item) in (types.IntType, types.LongType):
+		if isinstance(item, int):
 			command = config.straceCommandPid
 			command = string.replace(command, "%pid", str(item))
 			s = "Tracing process %i" % item
-		elif type(item) == types.StringType:
+		elif isinstance(item, str):
 			command = config.straceCommand
 			command = string.replace(command, "%command", item)
 			s = "Tracing command %s" % item
@@ -715,17 +711,17 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 		command = string.replace(command, "%file", straceTempFileName)
 		debug(s)
 		os.system("%s &" % command)
-		if type(item) == types.StringType:
+		if isinstance(item, str):
 			sleep(config.sleepAfterStartCommand)
 		else:
 			sleep(config.sleepAfterStraceAttachPid)
 
 	if testCommandsOutsideJail:
-		if not(type(testCommandsOutsideJail in (types.ListType, types.TupleType))):
+		if not(isinstance(testCommandsOutsideJail, (list, tuple))):
 			testCommandsOutsideJail = [testCommandsOutsideJail]
 		for testCommand in testCommandsOutsideJail:
 			if testCommand == "interactive":
-				raw_input("Interactive tests: press Enter when complete")
+				input("Interactive tests: press Enter when complete")
 			else:
 				debug("Executing test command '%s' ..." % testCommand)
 				returnCode = os.system("%s >/dev/null 2>/dev/null" % testCommand)
@@ -733,7 +729,7 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 				sleep(config.sleepAfterTest)
 
 	debug("Stopping tracing ... ", endLine=0)
-	lines = map(string.strip, execute(config.straceCommandStop))
+	lines = list(map(string.strip, execute(config.straceCommandStop)))
 	out = []
 	for line in lines:
 		if line:
@@ -768,7 +764,7 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 
 
 def killall(processNames):
-	if type(processNames) == types.StringType:
+	if isinstance(processNames, str):
 		processNames = [processNames]
 	if len(processNames) == 1:
 		s = "named '%s'" % processNames[0]
@@ -778,7 +774,7 @@ def killall(processNames):
 		debug("Killing processes %s ... : " % s, endLine=0)
 		pids = commandPids(processNames)
 		if len(pids):
-			debug(string.join(map(str, pids), ","))
+			debug(string.join(list(map(str, pids)), ","))
 			for pid in pids:
 				out = execute("kill -9 %i 2>&1" % pid)
 			sleep(config.sleepAfterKillall)
@@ -807,7 +803,7 @@ def debianGetDepends(package):
 
 
 def tryExecute(commands):
-	if type(commands) == types.StringType:
+	if isinstance(commands, str):
 		commands = [commands]
 	for command in commands:
 		debug("Executing command '%s' (pwd=%s)" % (command, config.tempDir), endLine=0)
@@ -829,7 +825,7 @@ def checkConfig():
 
 
 def runTests(tests, chrootCommands=None):
-	finished = 0
+	finished = False
 	i = 1
 	moveIndent(1)
 	while not(finished):
@@ -847,11 +843,11 @@ def runTests(tests, chrootCommands=None):
 			missingFiles = addMissingFilesFromProcess(tests)
 		if not(missingFiles):
 			debug("No missing file found")
-			finished = 1
+			finished = True
 		elif i > config.maxExecutions:
 			debug("Still missing files after %i tries" % config.maxExecutions)
-			finished = 1
-		i = i + 1
+			finished = True
+		i += 1
 		if chrootCommands:
 			killall(config.processNames)
 			tryExecute(chrootCommands)
@@ -886,17 +882,17 @@ def displayWarnings():
 					"Attempt to access the socket file %s, which %s outside the jail" % (socketFile, exists),
 					"if needed it must be created inside the jail as %s%s""" % (config.chroot, socketFile),
 					]
-				s = s + [
+				s += [
 					"If you create the socket, put it in the configuration option 'preserve'",
 					"so it won't be deleted when you launch this script again",
 					]
 				if exists != "exists":
-					s = s + [
+					s += [
 						"As this socket doesn't exist outside the jail, you can probably ignore this warning safely.",
 						]
 		else:
 			abort("No method to display the warning '%s'" % warningType)
-		sys.stdout.write("\nWARNING:\n%s\n" % string.join(map(lambda l: "   %s" % l, s), "\n"))
+		sys.stdout.write("\nWARNING:\n%s\n" % string.join(["   %s" % l for l in s], "\n"))
 
 
 def initRunningPids():
@@ -956,7 +952,7 @@ def makeChroot():
 
 	# === Execute main command until there is no missing file
 	if chrootCommands:
-		finished = 0
+		finished = False
 		i = 1
 		debug("Running strace on commands from inside jail")
 		moveIndent(1)
@@ -965,13 +961,13 @@ def makeChroot():
 			debug("Execution #%i" % i)
 			moveIndent(1)
 			missingFiles = addMissingFilesFromProcess(chrootCommands)
-			i = i + 1
+			i += 1
 			if not(missingFiles):
 				debug("No missing file found")
-				finished = 1
+				finished = True
 			if i > config.maxExecutions:
 				debug("Still missing files after %i tries" % config.maxExecutions)
-				finished = 1
+				finished = True
 			killall(config.processNames)
 			moveIndent(-1)
 		moveIndent(-1)
@@ -981,7 +977,7 @@ def makeChroot():
 		tryExecute(chrootCommands)
 
 	# === Make tests
-	continueTests = 1
+	continueTests = True
 	while continueTests:
 		if config.testCommandsOutsideJail:
 			debug("Running tests from outside the jail")
@@ -993,16 +989,16 @@ def makeChroot():
 				tryExecute(chrootCommands)
 			if not(runTests(["interactive"], chrootCommands)):
 				debug("No running process found, cannot run tests")
-		continueTests = 0
+		continueTests = False
 		if config.promptForSomeMoreTests:
 			prompt="Paused to give you a chance to fix some problems, do you want to run tests again (y/n) ? "
 			while prompt:
-				yesNo = string.lower(raw_input(prompt))
+				yesNo = string.lower(input(prompt))
 				if yesNo == "y":
-					continueTests = 1
+					continueTests = True
 					prompt = None
 				elif yesNo == "n":
-					continueTests = 0
+					continueTests = False
 					prompt = None
 				else:
 					prompt = "Please reply with 'y' or 'n': "
@@ -1065,7 +1061,7 @@ def loadConfig(file):
 			fp.close()
 		sys.stderr.write("ERROR: Cannot load configuration file '%s' as a python module\n" % file)
 		sys.stderr.write("ERROR: Executing it with python which should display a syntax error:\n")
-		os.system("python %s" % file)
+		os.system("python3 %s" % file)
 		sys.exit(1)
 
 	# Remove byte-compile file
@@ -1079,10 +1075,10 @@ def loadConfig(file):
 	for key in newConfig.__dict__.keys():
 		if key[:2] == "__":
 			continue
-		if not(config.__dict__.has_key(key)):
+		if not(key in config.__dict__):
 			abort("Invalid configuration key '%s'" % key)
 		s = newConfig.__dict__[key]
-		if type(s) == types.StringType:
+		if isinstance(s, str):
 			s = "'%s'" % s
 		else:
 			s = "%s" % s
