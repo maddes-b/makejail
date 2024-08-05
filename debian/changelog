@@ -1,8 +1,8 @@
 makejail (0.0.5-10) unstable; urgency=low
 
-  * Reorder the call to shutil to ensure that the setuid bit is 
+  * Reorder the call to shutil to ensure that the setuid bit is
     copied when making a jail, thanks to Charles Burgoyne for the
-    report and fix. (Closes: 661497) 
+    report and fix. (Closes: 661497)
   * examples/exim4.py: Add an example to chroot exim4 (largely untested)
 
  -- Javier Fernandez-Sanguino Pen~a <jfs@debian.org>  Sat, 03 Mar 2012 17:29:24 +0100
@@ -16,7 +16,7 @@ makejail (0.0.5-9) unstable; urgency=low
 
 makejail (0.0.5-8) unstable; urgency=low
 
-  [ Changes by  Florian Grandel <jerico.dev@gmail.com ]
+  [ Changes by Florian Grandel <jerico.dev@gmail.com> ]
   * Makejail default configuration now in /etc/makejail/makejail.conf
     There is no conflict now with the /etc/makejail/ directory
     and it is possible for the administrator to set defaults (Closes: #495112)
@@ -97,7 +97,7 @@ makejail (0.0.5-4) unstable; urgency=low
 
 makejail (0.0.5-3) unstable; urgency=low
 
-  * Now depends on python2.3 as asked for by python maintainers. 
+  * Now depends on python2.3 as asked for by python maintainers.
   * Removed 'stat | coreutils' from depends
 
  -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Sun, 17 Aug 2003 12:45:33 +0200
@@ -111,7 +111,7 @@ makejail (0.0.5-2) unstable; urgency=low
 
 makejail (0.0.5-1) unstable; urgency=low
 
-  * New upstream version. 
+  * New upstream version.
   * Fixed python2ism (Closes: #188332)
 
  -- Javier Fernandez-Sanguino Pen~a <jfs@computer.org>  Fri, 11 Apr 2003 01:13:11 +0200

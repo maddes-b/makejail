@@ -13,8 +13,8 @@ makejail (0.0.5-9) unstable; urgency=low
          -ff -o %file -p %pid >/dev/null 2>&1"
   -----------------------------------------------------------------------
 
-  Also, this release changes the default configuration file. It is 
-  located now in /etc/makejail/makejail.conf. The old 
+  Also, this release changes the default configuration file. It is
+  located now in /etc/makejail/makejail.conf. The old
   configuration file (/etc/makejail) will be moved transparently over
   to the new location.
 
