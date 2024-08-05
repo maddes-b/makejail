@@ -113,7 +113,6 @@ archs = []
 import stat
 import sys
 #import imp # library 'imp' removed in 3.12
-import string
 import os
 import shutil
 #import popen2 # library 'popen2' removed in 3.0
@@ -180,17 +179,6 @@ def matchPatterns(patterns, line, nextLine=None):
 			return match
 
 
-def startslike(s, pattern):
-	if s == pattern:
-		return 1
-	if len(s) < len(pattern):
-		return 0
-	elif s[:len(pattern)] == pattern:
-		return 1
-	else:
-		return 0
-
-
 def cleanDir(queue, dir):
 	# test inode for hardlink
 	debug("Entering directory %s" % dir)
@@ -201,7 +189,7 @@ def cleanDir(queue, dir):
 		file = "%s/%s" % (dir, file)
 		doNotTouchThat = 0
 		for path in config.preserve:
-			if startslike(file, "%s%s" % (config.chroot, path)):
+			if file.startswith("%s%s" % (config.chroot, path)):
 				doNotTouchThat = 1
 				break
 		if doNotTouchThat:
@@ -256,7 +244,7 @@ def readFileLines(fileName):
 		abort("Cannot read file '%s'" % fileName)
 	lines = f.readlines()
 	f.close()
-	return list(map(string.strip, lines))
+	return list(map(str.strip, lines))
 
 
 def dpkgInfoFiles(packagename):
@@ -322,7 +310,7 @@ def addPasswdFile(file, what):
 		for line in lines:
 			if not(":" in line):
 				continue
-			entry = string.split(line, ":")[0]
+			entry = line.split(":")[0]
 			if entry in entries:
 				d.write(line)
 				matches.append(entry)
@@ -331,7 +319,7 @@ def addPasswdFile(file, what):
 			entryString = "entries"
 		else:
 			entryString = "entry"
-		debug("%i %s copied : %s" % (len(matches), entryString, string.join(matches, ",")))
+		debug("%i %s copied : %s" % (len(matches), entryString, ",".join(matches)))
 	moveIndent(-1)
 
 
@@ -356,7 +344,7 @@ def addFileToJail(fileName):
 	if config.doNotCopy:
 		ignored = 0
 		for ignorePath in config.doNotCopy:
-			if startslike(fileName, ignorePath):
+			if fileName.startswith(ignorePath):
 				ignored = 1
 				break
 		if ignored:
@@ -374,7 +362,7 @@ def addFileToJail(fileName):
 		abort("The path '%s' is not absolute" % fileName)
 	elif fileName == "/.":
 		return []
-	if startslike(fileName, config.procPath):
+	if fileName.startswith(config.procPath):
 		if procMounted:
 			debug("   %s has just been mounted" % config.procPath)
 		else:
@@ -383,7 +371,7 @@ def addFileToJail(fileName):
 			mountProc()
 			procMounted = 1
 		return []
-	targetDirs = string.split(fileName[1:], "/")[:-1]
+	targetDirs = fileName[1:].split("/")[:-1]
 	checkDir = ""
 	for targetDir in targetDirs:
 		checkDir = checkDir + "/%s" % targetDir
@@ -530,41 +518,41 @@ def execute(command):
 def commandPids(processNames):
 	pids = []
 	for psLine in execute(config.psCommand)[1:]:
-		processCommandLine = string.split(psLine)[config.psColumns[1]-1]
-		name = string.split(string.split(processCommandLine)[0], "/")[-1]
+		processCommandLine = psLine.split()[config.psColumns[1]-1]
+		name = processCommandLine.split()[0].split("/")[-1]
 		if name in processNames:
-			pid = int(string.split(psLine)[config.psColumns[0]-1])
+			pid = int(psLine.split()[config.psColumns[0]-1])
 			if not(pid in doNotKillPids):
 				pids.append(int(pid))
 	return pids
 
 
 def fileType(file):
-	return string.strip(string.split(execute("file %s" % file)[0], ":")[1])
+	return execute("file %s" % file)[0].split(":")[1].strip()
 
 
 def checkRequirements(file):
 	moveIndent(1)
 	ft = fileType(file)
-	if string.find(ft, "script") != -1:
+	if ft.find("script") != -1:
 		f = open(file, "r")
 		head = f.readline()
 		f.close()
 		if head[:2] == "#!":
-			script = string.split(head[2:])[0]
+			script = head[2:].split()[0]
 			debug("%s is a script run with the interpreter %s" % (file, script))
 			addFileToJail(script)
 	else:
 		sharedStrings = ("shared object", "dynamically linked")
 		shared = None
 		for sharedString in sharedStrings:
-			if string.find(ft, sharedString) != -1:
+			if ft.find(sharedString) != -1:
 				shared = sharedString
 				break
 		if shared:
 			moveIndent(1)
 			debug("%s, checking the required libraries with ldd" % shared)
-			ldd_lines = list(map(string.strip, execute("ldd %s" % file)))
+			ldd_lines = list(map(str.strip, execute("ldd %s" % file)))
 			ignoreStrings = [
 				"not a dynamic executable",
 				"statically linked",
@@ -579,12 +567,12 @@ def checkRequirements(file):
 					continue
 				# Not all ldd lines include => they might
 				# reference the absolute path of the library
-				if string.find(line, "=>") == -1 and string.find(line, "/") == -1:
+				if line.find("=>") == -1 and line.find("/") == -1:
 					continue
-				if string.find(line, "=>") != -1:
-					lib = string.strip(string.split(string.split(line, "=>")[1], "(")[0])
+				if line.find("=>") != -1:
+					lib = line.split("=>")[1].split("(")[0].strip()
 				else:
-					lib = string.strip(string.split(line, "(")[0])
+					lib = line.split("(")[0].strip()
 				addFileToJail(lib)
 			moveIndent(-1)
 	moveIndent(-1)
@@ -632,13 +620,13 @@ def addMissingFilesFromStraceLines(lines):
 			nextLine = None
 		else:
 			nextLine = lines[n+1]
-		line = string.strip(line)
+		line = line.strip()
 
 		missingFile = matchPatterns(config.stracePatterns, line, nextLine)
 		if missingFile and not (missingFile in missingFiles):
 			if missingFile == config.chroot:
 				continue
-			if string.split(missingFile, "/")[-1] == "chroot":
+			if missingFile.split("/")[-1] == "chroot":
 				continue
 			try:
 				statInfos = os.stat(missingFile)
@@ -656,7 +644,7 @@ def addMissingFilesFromStraceLines(lines):
 		if missingFile and not (missingFile in missingFiles):
 			debug("Failed attempt at creating the file %s" % missingFile)
 			missingFile = removeTrailingSlashes(missingFile)
-			dir = string.join(string.split(missingFile, "/")[:-1], "/")
+			dir = "/".join(missingFile.split("/")[:-1])
 			if os.path.isdir(dir) and not(os.path.isdir(config.chroot + dir)):
 				moveIndent(1)
 				if addFileToJail(dir):
@@ -707,15 +695,15 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 	for item in items:
 		if isinstance(item, int):
 			command = config.straceCommandPid
-			command = string.replace(command, "%pid", str(item))
+			command = command.replace("%pid", str(item))
 			s = "Tracing process %i" % item
 		elif isinstance(item, str):
 			command = config.straceCommand
-			command = string.replace(command, "%command", item)
+			command = command.replace("%command", item)
 			s = "Tracing command %s" % item
 		else:
 			raise ValueError
-		command = string.replace(command, "%file", straceTempFileName)
+		command = command.replace("%file", straceTempFileName)
 		debug(s)
 		os.system("%s &" % command)
 		if isinstance(item, str):
@@ -736,22 +724,22 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 				sleep(config.sleepAfterTest)
 
 	debug("Stopping tracing ... ", endLine=0)
-	lines = list(map(string.strip, execute(config.straceCommandStop)))
+	lines = list(map(str.strip, execute(config.straceCommandStop)))
 	out = []
 	for line in lines:
 		if line:
 			out.append(line)
-	debug(string.join(out, " "))
+	debug(" ".join(out))
 
 	# Join the generated pid-specific trace files (strace -ff) into one single trace file
 	# If there are no such files the following lines should do nothing.
 	debug("Joining pid-specific trace files (if any)...")
-	command = string.replace("cat %file.* >>%file 2>/dev/null", "%file", straceTempFileName)
+	command = "cat %file.* >>%file 2>/dev/null".replace("%file", straceTempFileName)
 	os.system(command)
 	os.system("rm -f %s.* >/dev/null 2>/dev/null" % straceTempFileName)
 
 	if config.straceCommandView:
-		command = string.replace(config.straceCommandView, "%file", straceTempFileName)
+		command = config.straceCommandView.replace("%file", straceTempFileName)
 		lines = execute(command)
 	else:
 		straceTempFile = open(straceTempFileName, "r")
@@ -781,7 +769,7 @@ def killall(processNames):
 		debug("Killing processes %s ... : " % s, endLine=0)
 		pids = commandPids(processNames)
 		if len(pids):
-			debug(string.join(list(map(str, pids)), ","))
+			debug(",".join(list(map(str, pids))))
 			for pid in pids:
 				out = execute("kill -9 %i 2>&1" % pid)
 			sleep(config.sleepAfterKillall)
@@ -800,10 +788,10 @@ def debianIsPackageInstalled(package):
 def debianGetDepends(package):
 	depends = []
 	for line in execute("dpkg -p %s" % package):
-		if startslike(line, "Depends: "):
-			packs = string.split(string.replace(line[8:], "|", ","), ",")
+		if line.startswith("Depends: "):
+			packs = line[8:].replace("|", ",").split(",")
 			for pack in packs:
-				pack = string.split(string.strip(pack), " ")[0]
+				pack = pack.strip().split(" ")[0]
 				if debianIsPackageInstalled(pack):
 					depends.append(pack)
 	return depends
@@ -899,13 +887,13 @@ def displayWarnings():
 						]
 		else:
 			abort("No method to display the warning '%s'" % warningType)
-		sys.stdout.write("\nWARNING:\n%s\n" % string.join(["   %s" % l for l in s], "\n"))
+		sys.stdout.write("\nWARNING:\n%s\n" % "\n".join(["   %s" % l for l in s]))
 
 
 def initRunningPids():
 	debug("Initializing list of running processes")
 	for psLine in execute(config.psCommand)[1:]:
-		pid = int(string.split(psLine)[config.psColumns[0]-1])
+		pid = int(psLine.split()[config.psColumns[0]-1])
 		doNotKillPids.append(pid)
 
 
@@ -1000,7 +988,7 @@ def makeChroot():
 		if config.promptForSomeMoreTests:
 			prompt="Paused to give you a chance to fix some problems, do you want to run tests again (y/n) ? "
 			while prompt:
-				yesNo = string.lower(input(prompt))
+				yesNo = input(prompt).lower()
 				if yesNo == "y":
 					continueTests = 1
 					prompt = None
