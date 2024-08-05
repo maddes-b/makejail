@@ -6,7 +6,7 @@
      less'.  A typical entry in a Makefile or Makefile.am is:
 
 manpage.1: manpage.sgml
-	docbook-to-man $< > $@
+  docbook-to-man $< > $@
   -->
 
   <!-- Fill in your name for FIRSTNAME and SURNAME. -->
@@ -39,11 +39,15 @@ manpage.1: manpage.sgml
       <year>2002</year>
       <holder>&dhusername;</holder>
     </copyright>
+    <copyright>
+      <year>2002-2012</year>
+      <holder>Javier Fernandez-Sanguino Peña</holder>
+    </copyright>
     &dhdate;
   </refentryinfo>
   <refmeta>
-	  &dhucpackage;
-	  &dhsection;
+    &dhucpackage;
+    &dhsection;
   </refmeta>
   <refnamediv>
     <refname>&dhpackage;</refname>
@@ -62,7 +66,7 @@ __IF(TWOLEVELS)__
   <refsect1>
     <title>__H1__</title>
  __STARTLOOP(H1PARAS)__
-		  <para>__H1PARA__</para>
+      <para>__H1PARA__</para>
 __ENDLOOP(H1PARAS)__
 __STARTLOOP(SUBITEMS)__
     <variablelist>
@@ -70,7 +74,7 @@ __STARTLOOP(SUBITEMS)__
         <term><option>__H2__</option></term>
         <listitem>
 __STARTLOOP(H2PARAS)__
-		  <para>__H2PARA__</para>
+      <para>__H2PARA__</para>
 __ENDLOOP(H2PARAS)__
         </listitem>
       </varlistentry>
@@ -81,7 +85,7 @@ __ELSE(TWOLEVELS)__
   <refsect1>
     <title>__H1__</title>
 __STARTLOOP(H1PARAS)__
-	<para>__H1PARA__</para>
+  <para>__H1PARA__</para>
 __ENDLOOP(H1PARAS)__
   </refsect1>
 __ENDIF(TWOLEVELS)__
@@ -90,22 +94,22 @@ __ENDLOOP(ITEMS)__
   <refsect1>
     <title>AUTHOR</title>
     <para>This manual page was written by &dhusername;, <email>alain@onesite.org</email></para>
-	<para>This software comes with no warranty.</para>
+    <para>This software comes with no warranty.</para>
   </refsect1>
   <refsect1>
     <title>REPORTING BUGS</title>
-          <para>Makejail is heavily patched for Debian systems.
-          If you are using this program as part of the Debian
-          distribution you should report bugs to the Debian Bug Tracking System
-          using
-          submit@bugs.debian.org. For this you can use the
-          <command>reportbug</command> or <command>bug</command> program.
-          Please, read /usr/share/doc/debian/bug-reporting.txt
-          (or www.debian.org/Bugs) before doing so.</para>
+    <para>Makejail is heavily patched for Debian systems.
+    If you are using this program as part of the Debian
+    distribution you should report bugs to the Debian Bug Tracking System
+    using
+    submit@bugs.debian.org. For this you can use the
+    <command>reportbug</command> or <command>bug</command> program.
+    Please, read /usr/share/doc/debian/bug-reporting.txt
+    (or www.debian.org/Bugs) before doing so.</para>
 
-          <para>If you want to report bugs to the upstream maintainer use
-         makejail@floc.net</para>
-   </refsect1>
+    <para>If you want to report bugs to the upstream maintainer use
+    makejail@floc.net</para>
+  </refsect1>
 </refentry>
 
 <!-- Keep this comment at the end of the file

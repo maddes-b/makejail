@@ -324,7 +324,7 @@ Spaces separate the columns, the first column is numbered 1.
 
 Format: (columnPid,columnProcessName)
 
-Default: [1,4]
+Default: [1, 4]
 
 H2:Commands to run to trace processes
 
@@ -335,7 +335,7 @@ H3:straceCommand
 
 String describing the strace command when executing a command line. "%command" will be replaced by the command to execute, and "%file" by the path to the temporary trace file.
 
-Format: "strace_command [options] %command > %file"
+Format: "strace_command [options] %command 2>%file"
 
 Default: "strace -e trace=file,connect -e signal=none -f -ff -o %file %command >/dev/null 2>&1"
 
@@ -343,9 +343,9 @@ H3:straceCommandPid
 
 String describing the strace command when attaching itself to a running process. "%pid" will be replaced by the id of the process to trace, and "%file" by the path to the temporary trace file.
 
-Format: "strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
+Format: "strace_command [options] -p %pid 2>%file"
 
-Default: "strace -f -p %pid >/dev/null 2>>%file"
+Default: "strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
 
 H3: straceCommandStop
 

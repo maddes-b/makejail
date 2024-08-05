@@ -1,2 +1,6 @@
 .vscode/
 .todo.adoc
+doc/
+examples/__pycache__/
+manpage.sgml
+makejail.8

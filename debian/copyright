@@ -1,4 +1,4 @@
-This package was debianized by 
+This package was debianized by
 Javier Fernandez-Sanguino Peña <jfs@computer.org> on
 Sat, 17 Aug 2002 11:36:37 +0200.
 
@@ -8,7 +8,8 @@ Upstream Author: Alain Tesio <alain@onesite.org>
 
 Copyright:
 
-    Copyright (C) 2002 Alain T??sio
+    Copyright (C) 2002 Alain Tésio
+    Copyright (C) 2002-2012 Javier Fernandez-Sanguino Peña
 
 License:
 
@@ -16,12 +17,12 @@ License:
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 1, or (at your option)
     any later version.
- 
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
- 
+
 This program is distributed under the GNU GPL license, you will find
 a copy of this in your Debian system under /usr/share/common-licenses/
 
