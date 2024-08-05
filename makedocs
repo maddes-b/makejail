@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import string
 import os
 import time
 import re
@@ -19,7 +18,7 @@ if not(os.path.isdir(docDir)):
 	os.mkdir(docDir)
 
 source = open(sourcePath)
-lines = list(map(string.strip, source.readlines()))
+lines = list(map(str.strip, source.readlines()))
 source.close()
 
 html = open(htmlPath, "w")
@@ -48,15 +47,15 @@ def createFromTemplate(items):
 	else:
 		raise RuntimeError("No template string/file")
 
-	startpos = string.find(s, "__INSERT=")
+	startpos = s.find("__INSERT=")
 	while startpos >= 0:
-		endpos = string.index(s, "__", startpos+2)
+		endpos = s.index("__", startpos+2)
 		subtemplate = s[startpos+9:endpos]
 		fsubtemplate = open(subtemplate)
 		subs = fsubtemplate.read()
 		fsubtemplate.close()
-		s = string.replace(s, "__INSERT=%s__" % fsubtemplate, subs)
-		startpos = string.find(s, "__INSERT=")
+		s = s.replace("__INSERT=%s__" % fsubtemplate, subs)
+		startpos = s.find("__INSERT=")
 
 	for key in items.keys():
 		if key[:8] == "BOOLEAN(":
@@ -65,10 +64,10 @@ def createFromTemplate(items):
 			starttag = "__IF(%s)__" % boolid
 			endtag = "__ENDIF(%s)__" % boolid
 			elsetag = "__ELSE(%s)__" % boolid
-			startpos = string.find(s, starttag)
+			startpos = s.find(starttag)
 			while (startpos >= 0):
-				endpos = string.find(s, endtag)
-				elsepos = string.find(s, elsetag, startpos, endpos)
+				endpos = s.find(endtag)
+				elsepos = s.find(elsetag, startpos, endpos)
 				beforeif = s[:startpos]
 				if elsepos == -1:
 					iftemplate = s[startpos+len(starttag):endpos]
@@ -82,15 +81,15 @@ def createFromTemplate(items):
 					s = beforeif + iftemplate + afterif
 				else:
 					s = beforeif + elsetemplate + afterif
-				startpos = string.find(s, starttag)
+				startpos = s.find(starttag)
 		elif key[:5] == "LOOP(":
 			assert key[-1] == ")"
 			loopid = key[5:-1]
 			starttag = "__STARTLOOP(%s)__" % loopid
 			endtag = "__ENDLOOP(%s)__" % loopid
-			startpos = string.find(s, starttag)
+			startpos = s.find(starttag)
 			while (startpos >= 0):
-				endpos = string.find(s, endtag)
+				endpos = s.find(endtag)
 				beforeloop = s[:startpos]
 				looptemplate = s[startpos+len(starttag):endpos]
 				afterloop = s[endpos+len(endtag):]
@@ -102,14 +101,14 @@ def createFromTemplate(items):
 					bodyloop = createFromTemplate(loopitems)
 					bodyloops = bodyloops + bodyloop
 				s = beforeloop + bodyloops + afterloop
-				startpos = string.find(s, starttag)
+				startpos = s.find(starttag)
 		else:
 			if items[key] == None:
 				raise "Error : items['%s']=None" % key
 			if isinstance(items[key], list):
-				items[key] = string.join(items[key], "\n")
+				items[key] = "\n".join(items[key])
 			try:
-				s = string.replace(s, "__%s__" % key, items[key])
+				s = s.replace("__%s__" % key, items[key])
 			except:
 				raise "Type Error for the key '%s'" % key
 	return s
@@ -126,9 +125,9 @@ for line in lines:
 		continue
 
 	if ":" in line:
-		tag = string.split(line, ":")[0]
+		tag = line.split(":")[0]
 		if tag in ("H1", "H2", "H3", "PRE"):
-			line = string.join(string.split(line, ":")[1:], ":")
+			line = ":".join(line.split(":")[1:])
 			lastTag[tag] = line
 			if tag == "H1":
 				lastTag["H2"] = None
