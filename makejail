@@ -6,6 +6,7 @@
 #   Alain Tésio <alain@onesite.org> - original author
 # Contributors:
 #   Florian Grandel <jerico.dev@gmail.com>
+#   Matthias "Maddes" Bücher <maddes+debian@maddes.net>
 # License: GPL
 # OS: GNU/Linux
 # Version: 0.0.5
@@ -104,6 +105,8 @@ installedFiles = {}
 indentLevel = 0
 doNotKillPids = []
 tmpOut = None
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=680283
+archs = []
 
 
 import stat
@@ -256,7 +259,12 @@ def readFileLines(fileName):
 	return map(string.strip, lines)
 
 
-def dpkgInfoFiles(package):
+def dpkgInfoFiles(packagename):
+	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=680283
+	for arch in archs:
+		package = "%s%s" % (packagename, arch)
+		if os.path.exists(config.debianDpkgInfoFile % package):
+			break
 	return readFileLines(config.debianDpkgInfoFile % package)
 
 
@@ -423,6 +431,9 @@ def addFileToJail(fileName):
 		newWorkingDir = "%s/%s" % (config.chroot, os.path.realpath(fileDir)[1:])
 		os.chdir(newWorkingDir)
 		debug("   Creating '%s' as a symlink to '%s' (pwd=%s)" % (fileName[1:], linkTarget, newWorkingDir))
+		# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=825381
+		if os.path.lexists(os.path.split(fileName)[1]):
+			os.remove(os.path.split(fileName)[1])
 		os.symlink(linkTarget, os.path.split(fileName)[1])
 		os.chdir("/")
 		missingFiles.append(fileName)
@@ -1099,6 +1110,13 @@ if __name__ == "__main__":
 		configFile = sys.argv[1]
 	except IndexError:
 		abort("Usage: %s package\n\tpackage is the name of an installed package\n\t(a configuration file must exist in %s)" % (sys.argv[0], config.etcFile))
+
+	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=680283
+	dpkg_stdout = os.popen("dpkg --print-architecture")
+	dpkg_arch = dpkg_stdout.readline().rsplit()[0]
+	if dpkg_arch != '':
+		archs.append(':' + dpkg_arch)
+	archs.append('') # fallback
 
 	if os.path.isfile(config.etcFile):
 		loadConfig(config.etcFile)
