@@ -3,7 +3,7 @@
 
 # Authors:
 #   Javier Fernandez-Sanguino Peña <jfs@debian.org> - author of Debian version
-#   Alain Tesio <alain@onesite.org> - original author
+#   Alain Tésio <alain@onesite.org> - original author
 # Contributors:
 #   Florian Grandel <jerico.dev@gmail.com>
 # License: GPL
@@ -230,7 +230,7 @@ def cleanJail():
 	cleanDir(queue, config.chroot)
 	moveIndent(-1)
 	if len(queue) > config.maxRemove:
-		abort("Found %i files to remove, the maximum it %i" % (len(queue), config.maxRemove))
+		abort("Found %i files to remove, the maximum is %i" % (len(queue), config.maxRemove))
 	debug("Removing %i files in queue" % len(queue))
 	for file in queue:
 		debug("   Removing %s" % file)
@@ -401,7 +401,7 @@ def addFileToJail(fileName):
 	fileInChroot = os.path.join(config.chroot, os.path.realpath(fileDir)[1:], baseName)
 	if os.path.exists(fileInChroot):
 		if fileIsNewer(fileName, fileInChroot):
-			debug("   File %s is newer than the %s, overwriting" % (fileName, fileInChroot))
+			debug("   File %s is newer than the file %s, overwriting" % (fileName, fileInChroot))
 		else:
 			debug("   File %s already exists" % fileInChroot)
 			return []
@@ -596,7 +596,7 @@ def addPackageToJail(package):
 	installedPackages.append(package)
 
 	if (package in config.blockDepends):
-		debug("The package %s is in Depends but won't be installed")
+		debug("The package %s is in Depends but won't be installed" % package)
 		return
 
 	debug("Installing the package %s" % package)
@@ -819,10 +819,10 @@ def tryExecute(commands):
 
 def checkConfig():
 	if os.geteuid() != 0:
-		abort("Effective user it is not 0, this command must be run as root")
+		abort("Effective user id is not 0, this command must be run as root")
 	if not(config.chroot):
-		abort("You didn't defined the variable chroot")
-		config.chroot(removeTrailingSlashes(config.chroot))
+		abort("You didn't define the variable chroot")
+	config.chroot = removeTrailingSlashes(config.chroot)
 	if config.chroot[0] != "/":
 		abort("The variable chroot must be an absolute path")
 	if not(config.testCommandsInsideJail) and ("interactive" in config.testCommandsOutsideJail):
