@@ -5,10 +5,10 @@ pathToLdSoConf=None
 pathToLdSoCache="/var/run/ld.so.hints"
 psCommand="ps -ax"
 psColumns=[1,5]
-straceCommand="ktrace -a -f %file -i %command"
-straceCommandPid="ktrace -p %pid -a -f %file -i"
+straceCommand="ktrace -a -f {file:s} -i {command:s}"
+straceCommandPid="ktrace -p {pid:d} -a -f {file:s} -i"
 straceCommandStop="ktrace -C"
-straceCommandView="kdump -f %file"
+straceCommandView="kdump -f {file:s}"
 stracePatterns=[['.* NAMI +"([^"]*)".*',
 				 '.* RET *(exec.*|open|access|utimes|chown|.*stat|readlink|chdir) -1 errno 2.*']]
 straceCreatePatterns=[['.* NAMI +"([^"]*)".*',

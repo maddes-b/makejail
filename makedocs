@@ -8,13 +8,13 @@ print("Making docs")
 
 docDir = "doc"
 sourcePath = "doc.src"
-htmlPath = "%s/index.html" % docDir
-textPath = "%s/README" % docDir
+htmlPath = "{dir:s}/index.html".format(dir=docDir)
+textPath = "{dir:s}/README".format(dir=docDir)
 manPath = "manpage.sgml"
 manTemplatePath = "manpage.sgml.template"
 
 if not(os.path.isdir(docDir)):
-	print("Creating directory %s" % docDir)
+	print("Creating directory {dir:s}".format(dir=docDir))
 	os.mkdir(docDir)
 
 source = open(sourcePath)
@@ -54,16 +54,16 @@ def createFromTemplate(items):
 		fsubtemplate = open(subtemplate)
 		subs = fsubtemplate.read()
 		fsubtemplate.close()
-		s = s.replace("__INSERT=%s__" % fsubtemplate, subs)
+		s = s.replace("__INSERT={template:s}__".format(template=fsubtemplate), subs)
 		startpos = s.find("__INSERT=")
 
 	for key in items.keys():
 		if key[:8] == "BOOLEAN(":
 			assert key[-1] == ")"
 			boolid = key[8:-1]
-			starttag = "__IF(%s)__" % boolid
-			endtag = "__ENDIF(%s)__" % boolid
-			elsetag = "__ELSE(%s)__" % boolid
+			starttag = "__IF({id:s})__".format(id=boolid)
+			endtag = "__ENDIF({id:s})__".format(id=boolid)
+			elsetag = "__ELSE({id:s})__".format(id=boolid)
 			startpos = s.find(starttag)
 			while (startpos >= 0):
 				endpos = s.find(endtag)
@@ -85,8 +85,8 @@ def createFromTemplate(items):
 		elif key[:5] == "LOOP(":
 			assert key[-1] == ")"
 			loopid = key[5:-1]
-			starttag = "__STARTLOOP(%s)__" % loopid
-			endtag = "__ENDLOOP(%s)__" % loopid
+			starttag = "__STARTLOOP({id:s})__".format(id=loopid)
+			endtag = "__ENDLOOP({id:s})__".format(id=loopid)
 			startpos = s.find(starttag)
 			while (startpos >= 0):
 				endpos = s.find(endtag)
@@ -104,13 +104,13 @@ def createFromTemplate(items):
 				startpos = s.find(starttag)
 		else:
 			if items[key] == None:
-				raise "Error : items['%s']=None" % key
+				raise "Error : items['{key:s}']=None".format(key=key)
 			if isinstance(items[key], list):
 				items[key] = "\n".join(items[key])
 			try:
-				s = s.replace("__%s__" % key, items[key])
+				s = s.replace("__{key:s}__".format(key=key), items[key])
 			except:
-				raise "Type Error for the key '%s'" % key
+				raise "Type Error for the key '{key:s}'".format(key=key)
 	return s
 
 manModeRegExp = re.compile("^__MANMODE=([0-2])__$")
@@ -140,20 +140,20 @@ for line in lines:
 		tag = None
 
 	if tag:
-		htmlString = "<%s>%s</%s>" % (tag, line, tag)
+		htmlString = "<{tag:s}>{line:s}</{tag:s}>".format(tag=tag, line=line)
 		if tag == "PRE":
 			textString = line
 		elif tag == "H1":
 			sep = "*" * (len(line)+4)
-			textString = "%s\n* %s *\n%s" % (sep, line, sep)
+			textString = "{sep:s}\n* {line:s} *\n{sep:s}".format(sep=sep, line=line)
 		elif tag == "H2":
-			textString = "%s\n%s" % (line, "=" * len(line))
+			textString = "{line:s}\n{uline:s}".format(line=line, uline="="*len(line))
 		elif tag == "H3":
-			textString = "%s\n%s" % (line, "-" * len(line))
+			textString = "{line:s}\n{uline:s}".format(line=line, uline="-"*len(line))
 		else:
 			raise ValueError
 	else:
-		htmlString = "%s<br>" % line
+		htmlString = "{line:s}<br>".format(line=line)
 		textString = line
 
 	if manMode and line:
@@ -167,7 +167,7 @@ for line in lines:
 			if tag == "H1":
 				pass
 			elif tag == "H2":
-				manItems.append({"H1": "%s - %s" % (lastTag["H1"], line), "BOOLEAN(TWOLEVELS)": 1, "LOOP(H1PARAS)": [], "LOOP(SUBITEMS)": []})
+				manItems.append({"H1": "{tag:s} - {line:s}".format(tag=lastTag["H1"], line=line), "BOOLEAN(TWOLEVELS)": 1, "LOOP(H1PARAS)": [], "LOOP(SUBITEMS)": []})
 			elif tag == "H3":
 				manItems[-1]["LOOP(SUBITEMS)"].append({"H2": line, "LOOP(H2PARAS)": []})
 			else:
@@ -178,12 +178,12 @@ for line in lines:
 		else:
 			raise ValueError
 
-	html.write("%s\n" % htmlString)
-	text.write("%s\n" % textString)
+	html.write("{text:s}\n".format(text=htmlString))
+	text.write("{text:s}\n".format(text=textString))
 
 
 for endTag in ("body", "html"):
-	html.write("</%s>\n" % endTag)
+	html.write("</{tag:s}>\n".format(tag=endTag))
 
 manTemplateItems = {
 	"templatefile": manTemplatePath,
@@ -194,8 +194,8 @@ manTemplateItems = {
 man.write(createFromTemplate(manTemplateItems))
 
 html.close()
-print("HTML file %s generated" % htmlPath)
+print("HTML file {file:s} generated".format(file=htmlPath))
 text.close()
-print("Text file %s generated" % textPath)
+print("Text file {file:s} generated".format(file=textPath))
 man.close()
-print("Man page %s generated" % manPath)
+print("Man page {file:s} generated".format(file=manPath))

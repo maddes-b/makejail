@@ -242,11 +242,11 @@ Default: []
 
 H3:debianDpkgInfoFile
 
-Path to the dpkg package list files. "%s" will be replaced by the name of the package.
+Path to the dpkg package list files. "{package:s}" will be replaced by the name of the package.
 
-Format: "/path/to/info/files/%s.list"
+Format: "/path/to/info/files/{package:s}.list"
 
-Default: "/var/lib/dpkg/info/%s.list"
+Default: "/var/lib/dpkg/info/{package:s}.list"
 
 H2:Paths so specific files and commands
 
@@ -333,19 +333,19 @@ The defaults should be suitable for systems using strace. "-f" means strace shou
 
 H3:straceCommand
 
-String describing the strace command when executing a command line. "%command" will be replaced by the command to execute, and "%file" by the path to the temporary trace file.
+String describing the strace command when executing a command line. "{command:s}" will be replaced by the command to execute, and "{file:s}" by the path to the temporary trace file.
 
-Format: "strace_command [options] %command 2>%file"
+Format: "strace_command [options] {command:s} 2>{file:s}"
 
-Default: "strace -e trace=file,connect -e signal=none -f -ff -o %file %command >/dev/null 2>&1"
+Default: "strace -e trace=file,connect -e signal=none -f -ff -o {file:s} {command:s} >/dev/null 2>&1"
 
 H3:straceCommandPid
 
-String describing the strace command when attaching itself to a running process. "%pid" will be replaced by the id of the process to trace, and "%file" by the path to the temporary trace file.
+String describing the strace command when attaching itself to a running process. "{pid:d}" will be replaced by the id of the process to trace, and "{file:s}" by the path to the temporary trace file.
 
-Format: "strace_command [options] -p %pid 2>%file"
+Format: "strace_command [options] -p {pid:d} 2>{file:s}"
 
-Default: "strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
+Default: "strace -e trace=file,connect -e signal=none -f -ff -o {file:s} -p {pid:d} >/dev/null 2>&1"
 
 H3: straceCommandStop
 
@@ -357,9 +357,9 @@ Default: "killall -9 strace"
 
 H3:straceCommandView
 
-Set this to None if the trace output files can be read directly, or the command line to execute which prints the trace on stdout. "%file" will be replaced by the name of this file.
+Set this to None if the trace output files can be read directly, or the command line to execute which prints the trace on stdout. "{file:s}" will be replaced by the name of this file.
 
-Format: "strace_command_viewer [options] %file"
+Format: "strace_command_viewer [options] {file:s}"
 
 Default: None
 
