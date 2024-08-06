@@ -52,7 +52,7 @@ class configClass:
 		self.users = []
 		self.groups = []
 
-		self.debianDpkgInfoFile = "/var/lib/dpkg/info/%s.list"
+		self.debianDpkgInfoFile = "/var/lib/dpkg/info/{package:s}.list"
 		self.etcFile = "/etc/makejail/makejail.conf"
 		self.pathToLdConfig = "/sbin/ldconfig"
 		# For Ubuntu systems, to prevent copying a bash shell
@@ -77,8 +77,8 @@ class configClass:
 		self.psColumns = [1, 4]
 
 		# -e file=trace doesn't catch socket connections
-		self.straceCommand = "strace -e trace=file,connect -e signal=none -f -ff -o %file %command >/dev/null 2>&1"
-		self.straceCommandPid = "strace -e trace=file,connect -e signal=none -f -ff -o %file -p %pid >/dev/null 2>&1"
+		self.straceCommand = "strace -e trace=file,connect -e signal=none -f -ff -o {file:s} {command:s} >/dev/null 2>&1"
+		self.straceCommandPid = "strace -e trace=file,connect -e signal=none -f -ff -o {file:s} -p {pid:d} >/dev/null 2>&1"
 		self.straceCommandStop = "killall -9 strace"
 		self.straceCommandView = None
 		self.stracePatterns = [
@@ -140,7 +140,7 @@ def debug(s, endLine=1):
 
 
 def abort(s):
-	sys.stderr.write("\nERROR: %s\n" % s)
+	sys.stderr.write("\nERROR: {error:s}\n".format(error=s))
 	sys.exit(1)
 
 
@@ -182,34 +182,34 @@ def matchPatterns(patterns, line, nextLine=None):
 
 def cleanDir(queue, dir):
 	# test inode for hardlink
-	debug("Entering directory %s" % dir)
+	debug("Entering directory {dir:s}".format(dir=dir))
 	moveIndent(1)
 	keepUpperDir = 0
 	files = os.listdir(dir)
 	for file in files:
-		file = "%s/%s" % (dir, file)
+		file = "{dir:s}/{file:s}".format(dir=dir, file=file)
 		doNotTouchThat = 0
 		for path in config.preserve:
-			if file.startswith("%s%s" % (config.chroot, path)):
+			if file.startswith("{chroot:s}{file:s}".format(chroot=config.chroot, file=path)):
 				doNotTouchThat = 1
 				break
 		if doNotTouchThat:
-			debug("Preserving %s" % file)
+			debug("Preserving {file:s}".format(file=file))
 			keepUpperDir = 1
 			continue
 		keepThisDir = 0
 		if os.path.isdir(file) and not(os.path.islink(file)) and file != config.chroot:
-			if file == "%s%s" % (config.chroot, config.procPath):
-				debug("%s : mount point, do not try removing files deeper" % config.procPath)
+			if file == "{chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath):
+				debug("{file:s} : mount point, do not try removing files deeper".format(file=config.procPath))
 			else:
 				if cleanDir(queue, file):
 					keepThisDir = 1
 					keepUpperDir = 1
 		if keepThisDir:
-			if file != "%s%s" % (config.chroot, config.procPath):
-				debug("   Not queueing for remove %s, some paths to preserve below" % file)
+			if file != "{chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath):
+				debug("   Not queueing for remove {file:s}, some paths to preserve below".format(file=file))
 		else:
-			debug("   Queuing for remove %s" % file)
+			debug("   Queuing for remove {file:s}".format(file=file))
 			queue.append(file)
 	moveIndent(-1)
 	return keepUpperDir
@@ -222,27 +222,27 @@ def cleanJail():
 	cleanDir(queue, config.chroot)
 	moveIndent(-1)
 	if len(queue) > config.maxRemove:
-		abort("Found %i files to remove, the maximum is %i" % (len(queue), config.maxRemove))
-	debug("Removing %i files in queue" % len(queue))
+		abort("Found {count:d} files to remove, the maximum is {max:d}".format(count=len(queue), max=config.maxRemove))
+	debug("Removing {count:d} files in queue".format(count=len(queue)))
 	for file in queue:
-		debug("   Removing %s" % file)
+		debug("   Removing {file:s}".format(file=file))
 		try:
 			if os.path.isdir(file) and not(os.path.islink(file)):
 				os.rmdir(file)
 			else:
 				os.unlink(file)
 		except OSError:
-			if file == "%s%s" % (config.chroot, config.procPath):
-				debug("      Cannot remove %s, it's probably mounted" % config.procPath)
+			if file == "{chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath):
+				debug("      Cannot remove {file:s}, it's probably mounted".format(file=config.procPath))
 			else:
-				abort("Cannot remove the path %s" % file)
+				abort("Cannot remove the path {file:s}".format(file=file))
 
 
 def readFileLines(fileName):
 	try:
 		f = open(fileName, "r")
 	except IOError:
-		abort("Cannot read file '%s'" % fileName)
+		abort("Cannot read file '{file:s}'".format(file=fileName))
 	lines = f.readlines()
 	f.close()
 	return list(map(str.strip, lines))
@@ -251,10 +251,10 @@ def readFileLines(fileName):
 def dpkgInfoFiles(packagename):
 	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=680283
 	for arch in archs:
-		package = "%s%s" % (packagename, arch)
-		if os.path.exists(config.debianDpkgInfoFile % package):
+		package = "{package:s}{arch:s}".format(package=packagename, arch=arch)
+		if os.path.exists(config.debianDpkgInfoFile.format(package=package)):
 			break
-	return readFileLines(config.debianDpkgInfoFile % package)
+	return readFileLines(config.debianDpkgInfoFile.format(package=package))
 
 
 def copyStatAndOwner(source, target):
@@ -267,25 +267,25 @@ def copyStatAndOwner(source, target):
 
 
 def unmountProc():
-	debug("Unmounting %s" % config.procPath)
+	debug("Unmounting {path:s}".format(path=config.procPath))
 	moveIndent(1)
-	returnCode = os.system("umount -t proc %s%s" % (config.chroot, config.procPath))
+	returnCode = os.system("umount -t proc {chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath))
 	if returnCode == 0:
-		debug("%s unmounted successfully" % config.procPath)
+		debug("{file:s} unmounted successfully".format(file=config.procPath))
 	else:
-		abort("Unable to unmount %s" % config.procPath)
+		abort("Unable to unmount {file:s}".format(file=config.procPath))
 	moveIndent(-1)
 
 
 def mountProc():
-	debug("Mounting %s" % config.procPath)
+	debug("Mounting {file:s}".format(file=config.procPath))
 	moveIndent(1)
-	returnCode = os.system("mount -t proc proc %s%s" % (config.chroot, config.procPath))
+	returnCode = os.system("mount -t proc proc {chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath))
 	if returnCode == 0:
-		debug("%s mounted successfully" % config.procPath)
+		debug("{file:s} mounted successfully".format(file=config.procPath))
 		warnings.append(("/proc", None))
 	else:
-		abort("Unable to mount %s" % config.procPath)
+		abort("Unable to mount {file:s}".format(file=config.procPath))
 	moveIndent(-1)
 
 
@@ -297,10 +297,10 @@ def addPasswdFile(file, what):
 		entries = config.groups
 	else:
 		raise ValueError
-	dest = "%s%s" % (config.chroot, file)
-	debug("Copying with filtering on %s : %s -> %s" % (what, file, dest))
+	dest = "{chroot:s}{file:s}".format(chroot=config.chroot, file=file)
+	debug("Copying with filtering on {what:s} : {file:s} -> {dest:s}".format(what=what, file=file, dest=dest))
 	if "*" in entries:
-		debug('Entry "*" in %s, the file is simply copied' % what)
+		debug('Entry "*" in {what:s}, the file is simply copied'.format(what=what))
 		shutil.copy(file, dest)
 	else:
 		f = open(file, "r")
@@ -320,7 +320,7 @@ def addPasswdFile(file, what):
 			entryString = "entries"
 		else:
 			entryString = "entry"
-		debug("%i %s copied : %s" % (len(matches), entryString, ",".join(matches)))
+		debug("{count:d} {entry:s} copied : {matches:s}".format(count=len(matches), entry=entryString, matches=",".join(matches)))
 	moveIndent(-1)
 
 
@@ -336,10 +336,10 @@ def addFileToJail(fileName):
 	missingFiles = []
 	if fileName in installedFiles:
 		return []
-	debug("Checking path '%s'" % fileName)
+	debug("Checking path '{path:s}'".format(path=fileName))
 	if fileName == config.pathToLdSoCache:
 		installedFiles[fileName] = -1
-		debug("   Shared libs cache file %s marked as needed, it will be generated at the end" % config.pathToLdSoCache)
+		debug("   Shared libs cache file {file:s} marked as needed, it will be generated at the end".format(file=config.pathToLdSoCache))
 		needLdCache = 1
 		return []
 	if config.doNotCopy:
@@ -349,36 +349,36 @@ def addFileToJail(fileName):
 				ignored = 1
 				break
 		if ignored:
-			debug("   Ignoring because of doNotCopy directive: %s" % fileName)
+			debug("   Ignoring because of doNotCopy directive: {file:s}".format(file=fileName))
 			installedFiles[fileName] = 0
 			return []
 	try:
 		stats = os.stat(fileName)
 	except OSError:
-		debug("   The path '%s' doesn't exist" % fileName)
+		debug("   The path '{file:s}' doesn't exist".format(file=fileName))
 		return []
 	statMode = stats.st_mode
 	installedFiles[fileName] = 1
 	if fileName[0] != "/":
-		abort("The path '%s' is not absolute" % fileName)
+		abort("The path '{path:s}' is not absolute".format(path=fileName))
 	elif fileName == "/.":
 		return []
 	if fileName.startswith(config.procPath):
 		if procMounted:
-			debug("   %s has just been mounted" % config.procPath)
+			debug("   {file:s} has just been mounted".format(file=config.procPath))
 		else:
-			os.mkdir("%s%s" % (config.chroot, config.procPath))
-			os.chmod("%s%s" % (config.chroot, config.procPath), 0o0555)
+			os.mkdir("{chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath))
+			os.chmod("{chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath), 0o0555)
 			mountProc()
 			procMounted = 1
 		return []
 	targetDirs = fileName[1:].split("/")[:-1]
 	checkDir = ""
 	for targetDir in targetDirs:
-		checkDir = checkDir + "/%s" % targetDir
-		fileInChroot = "%s%s" % (config.chroot, checkDir)
+		checkDir = checkDir + "/{dir:s}".format(dir=targetDir)
+		fileInChroot = "{chroot:s}{file:s}".format(chroot=config.chroot, file=checkDir)
 		if not(os.path.isdir(fileInChroot)):
-			debug("   Dir '%s' missing" % fileInChroot)
+			debug("   Dir '{dir:s}' missing".format(dir=fileInChroot))
 			moveIndent(1)
 			addFileToJail(checkDir)
 			moveIndent(-1)
@@ -391,13 +391,13 @@ def addFileToJail(fileName):
 	fileInChroot = os.path.join(config.chroot, os.path.realpath(fileDir)[1:], baseName)
 	if os.path.exists(fileInChroot):
 		if fileIsNewer(fileName, fileInChroot):
-			debug("   File %s is newer than the file %s, overwriting" % (fileName, fileInChroot))
+			debug("   File {file:s} is newer than the file {chfile:s}, overwriting".format(file=fileName, chfile=fileInChroot))
 		else:
-			debug("   File %s already exists" % fileInChroot)
+			debug("   File {chfile:s} already exists".format(chfile=fileInChroot))
 			return []
 	elif os.path.islink(fileName):
 		linkTarget = os.readlink(fileName)
-		debug("   '%s' is a symlink to '%s'" % (fileName, linkTarget))
+		debug("   '{file:s}' is a symlink to '{target:s}'".format(file=fileName, target=linkTarget))
 		moveIndent(1)
 		fileDir = os.path.split(fileName)[0]
 		if linkTarget[-1] == "/":
@@ -405,14 +405,14 @@ def addFileToJail(fileName):
 		if linkTarget[0] == "/":
 			absoluteLinkTarget = linkTarget
 		else:
-			absoluteLinkTarget = "%s/%s" % (fileDir, linkTarget)
+			absoluteLinkTarget = "{dir:s}/{target:s}".format(dir=fileDir, target=linkTarget)
 		newFiles = addFileToJail(absoluteLinkTarget)
 		missingFiles = missingFiles + newFiles
 		# newWorkingDir may be a symlink to an absolute
 		# pathname.  See the above comment.
-		newWorkingDir = "%s/%s" % (config.chroot, os.path.realpath(fileDir)[1:])
+		newWorkingDir = "{chroot:s}/{file:s}".format(chroot=config.chroot, file=os.path.realpath(fileDir)[1:])
 		os.chdir(newWorkingDir)
-		debug("   Creating '%s' as a symlink to '%s' (pwd=%s)" % (fileName[1:], linkTarget, newWorkingDir))
+		debug("   Creating '{file:s}' as a symlink to '{target:s}' (pwd={dir:s})".format(file=fileName[1:], target=linkTarget, dir=newWorkingDir))
 		# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=825381
 		if os.path.lexists(os.path.split(fileName)[1]):
 			os.remove(os.path.split(fileName)[1])
@@ -421,15 +421,15 @@ def addFileToJail(fileName):
 		missingFiles.append(fileName)
 		moveIndent(-1)
 	elif stat.S_ISSOCK(statMode):
-		debug("Failed to connect to socket %s, file exists" % fileName)
+		debug("Failed to connect to socket {file:s}, file exists".format(file=fileName))
 		installedFiles[fileName] = -1
 		warnings.append(("socket", (fileName, "exists")))
 		return [fileName]
 	elif os.path.isdir(fileName):
 		if os.path.isdir(fileInChroot):
-			debug("   Dir %s already exists" % fileInChroot)
+			debug("   Dir {dir:s} already exists".format(dir=fileInChroot))
 			return []
-		debug("   Making dir %s" % fileInChroot)
+		debug("   Making dir {dir:s}".format(dir=fileInChroot))
 		os.mkdir(fileInChroot)
 		missingFiles.append(fileName)
 	elif stat.S_ISCHR(statMode) or stat.S_ISBLK(statMode):
@@ -442,12 +442,12 @@ def addFileToJail(fileName):
 		device = stats.st_rdev
 		major = os.major(device)
 		minor = os.minor(device)
-		debug("   Creating %s device %s (major=%i, minor=%i)" % (label, fileName, major, minor))
-		os.system("mknod %s %s %i %i" % (fileInChroot, deviceType, major, minor))
+		debug("   Creating {label:s} device {file:s} (major={major:d}, minor={minor:d})".format(label=label, file=fileName, major=major, minor=minor))
+		os.system("mknod {file:s} {type:s} {major:d} {minor:d}".format(file=fileInChroot, type=deviceType, major=major, minor=minor))
 		missingFiles.append(fileName)
 	elif stat.S_ISBLK(statMode):
-		debug("   Creating block device : %s -> %s" % (fileName, fileInChroot))
-		os.system("cp -a %s %s" % (fileName, fileInChroot))
+		debug("   Creating block device : {file:s} -> {chfile:s}".format(file=fileName, chfile=fileInChroot))
+		os.system("cp -a {file:s} {chfile:s}".format(file=fileName, chfile=fileInChroot))
 		missingFiles.append(fileName)
 	elif fileName in config.userFiles:
 		missingFiles.append(fileName)
@@ -456,7 +456,7 @@ def addFileToJail(fileName):
 		missingFiles.append(fileName)
 		addPasswdFile(fileName, "groups")
 	else:
-		debug("   Copying %s -> %s" % (fileName, fileInChroot))
+		debug("   Copying {file:s} -> {chfile:s}".format(file=fileName, chfile=fileInChroot))
 		# Copy the file
 		shutil.copy(fileName, fileInChroot)
 		shutil.copystat(fileName, fileInChroot)
@@ -482,7 +482,7 @@ def makeNonBlocking(fd):
 
 
 def execute(command):
-	debug("  Executing : %s" % command)
+	debug("  Executing : {command:s}".format(command=command))
 	child = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True, universal_newlines=True)
 	files = (child.stdout, child.stderr)
 	fds = [files[0].fileno(), files[1].fileno()]
@@ -510,7 +510,7 @@ def execute(command):
 		select.select([], [], [], .05)
 	errCode = child.wait()
 	if errCode:
-		debug("  WARNING: exit code %i" % errCode)
+		debug("  WARNING: exit code {code:d}".format(code=errCode))
 	return datas[0]
 
 
@@ -527,7 +527,7 @@ def commandPids(processNames):
 
 
 def fileType(file):
-	return execute("file %s" % file)[0].split(":")[1].strip()
+	return execute("file {file:s}".format(file=file))[0].split(":")[1].strip()
 
 
 def checkRequirements(file):
@@ -539,7 +539,7 @@ def checkRequirements(file):
 		f.close()
 		if head[:2] == "#!":
 			script = head[2:].split()[0]
-			debug("%s is a script run with the interpreter %s" % (file, script))
+			debug("{file:s} is a script run with the interpreter {script:s}".format(file=file, script=script))
 			addFileToJail(script)
 	else:
 		sharedStrings = ("shared object", "dynamically linked")
@@ -550,8 +550,8 @@ def checkRequirements(file):
 				break
 		if shared:
 			moveIndent(1)
-			debug("%s, checking the required libraries with ldd" % shared)
-			ldd_lines = list(map(str.strip, execute("ldd %s" % file)))
+			debug("{shared:s}, checking the required libraries with ldd".format(shared=shared))
+			ldd_lines = list(map(str.strip, execute("ldd {file:s}".format(file=file))))
 			ignoreStrings = [
 				"not a dynamic executable",
 				"statically linked",
@@ -585,10 +585,10 @@ def addPackageToJail(package):
 	installedPackages.append(package)
 
 	if (package in config.blockDepends):
-		debug("The package %s is in Depends but won't be installed" % package)
+		debug("The package {package:s} is in Depends but won't be installed".format(package=package))
 		return
 
-	debug("Installing the package %s" % package)
+	debug("Installing the package {package:s}".format(package=package))
 	moveIndent(1)
 
 	debug("Copying the files from the dpkg information")
@@ -641,7 +641,7 @@ def addMissingFilesFromStraceLines(lines):
 
 		missingFile = matchPatterns(config.straceCreatePatterns, line, nextLine)
 		if missingFile and not (missingFile in missingFiles):
-			debug("Failed attempt at creating the file %s" % missingFile)
+			debug("Failed attempt at creating the file {file:s}".format(file=missingFile))
 			missingFile = removeTrailingSlashes(missingFile)
 			dir = "/".join(missingFile.split("/")[:-1])
 			if os.path.isdir(dir) and not(os.path.isdir(config.chroot + dir)):
@@ -662,7 +662,7 @@ def addMissingFilesFromStraceLines(lines):
 					exists = "exists"
 				else:
 					exists = "exists but is not a socket ??"
-			debug("Failed to connect to socket %s, file %s" % (missingFile, exists))
+			debug("Failed to connect to socket {file:s}, file {exists:s}".format(file=missingFile, exists=exists))
 			installedFiles[missingFile] = -1
 			warnings.append(("socket", (missingFile, exists)))
 
@@ -681,7 +681,7 @@ def sleep(delay):
 			s = "s"
 		else:
 			s = ""
-		debug("Sleeping for %.2f second%s" % (delay, s))
+		debug("Sleeping for {delay:.2f} second{plural:s}".format(delay=delay, plural=s))
 		time.sleep(delay)
 
 
@@ -693,18 +693,15 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 
 	for item in items:
 		if isinstance(item, int):
-			command = config.straceCommandPid
-			command = command.replace("%pid", str(item))
-			s = "Tracing process %i" % item
+			command = config.straceCommandPid.format(file=straceTempFileName, pid=item)
+			s = "Tracing process {pid:d}".format(pid=item)
 		elif isinstance(item, str):
-			command = config.straceCommand
-			command = command.replace("%command", item)
-			s = "Tracing command %s" % item
+			command = config.straceCommand.format(file=straceTempFileName, command=item)
+			s = "Tracing command {command:s}".format(command=item)
 		else:
 			raise ValueError
-		command = command.replace("%file", straceTempFileName)
 		debug(s)
-		os.system("%s &" % command)
+		os.system("{command:s} &".format(command=command))
 		if isinstance(item, str):
 			sleep(config.sleepAfterStartCommand)
 		else:
@@ -717,9 +714,9 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 			if testCommand == "interactive":
 				input("Interactive tests: press Enter when complete")
 			else:
-				debug("Executing test command '%s' ..." % testCommand)
-				returnCode = os.system("%s >/dev/null 2>/dev/null" % testCommand)
-				debug("   return code is %i" % returnCode)
+				debug("Executing test command '{command:s}' ...".format(command=testCommand))
+				returnCode = os.system("{command:s} >/dev/null 2>/dev/null".format(command=testCommand))
+				debug("   return code is {code:d}".format(code=returnCode))
 				sleep(config.sleepAfterTest)
 
 	debug("Stopping tracing ... ", endLine=0)
@@ -733,12 +730,12 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 	# Join the generated pid-specific trace files (strace -ff) into one single trace file
 	# If there are no such files the following lines should do nothing.
 	debug("Joining pid-specific trace files (if any)...")
-	command = "cat %file.* >>%file 2>/dev/null".replace("%file", straceTempFileName)
+	command = "cat {file:s}.* >>{file:s} 2>/dev/null".format(file=straceTempFileName)
 	os.system(command)
-	os.system("rm -f %s.* >/dev/null 2>/dev/null" % straceTempFileName)
+	os.system("rm -f {file:s}.* >/dev/null 2>/dev/null".format(file=straceTempFileName))
 
 	if config.straceCommandView:
-		command = config.straceCommandView.replace("%file", straceTempFileName)
+		command = config.straceCommandView.format(file=straceTempFileName)
 		lines = execute(command)
 	else:
 		straceTempFile = open(straceTempFileName, "r")
@@ -746,12 +743,12 @@ def addMissingFilesFromProcess(items, testCommandsOutsideJail=[]):
 		straceTempFile.close()
 
 	if config.keepStraceOutputs:
-		whatWillHappenToThisPoorTraceFile = " (available in %s)" % straceTempFileName
+		whatWillHappenToThisPoorTraceFile = " (available in {file:s})".format(file=straceTempFileName)
 	else:
 		whatWillHappenToThisPoorTraceFile = ""
 		os.unlink(straceTempFileName)
 
-	debug("Looking for missing files in the trace file%s" % whatWillHappenToThisPoorTraceFile)
+	debug("Looking for missing files in the trace file{comment:s}".format(comment=whatWillHappenToThisPoorTraceFile))
 	missingFiles = addMissingFilesFromStraceLines(lines)
 
 	return missingFiles
@@ -761,23 +758,23 @@ def killall(processNames):
 	if isinstance(processNames, str):
 		processNames = [processNames]
 	if len(processNames) == 1:
-		s = "named '%s'" % processNames[0]
+		s = "named '{process:s}'".format(process=processNames[0])
 	else:
-		s = "matching %s" % str(processNames)
+		s = "matching {processes:s}".format(processes=str(processNames))
 	if processNames:
-		debug("Killing processes %s ... : " % s, endLine=0)
+		debug("Killing processes {pattern:s} ... : ".format(pattern=s), endLine=0)
 		pids = commandPids(processNames)
 		if len(pids):
 			debug(",".join(list(map(str, pids))))
 			for pid in pids:
-				out = execute("kill -9 %i 2>&1" % pid)
+				out = execute("kill -9 {pid:d} 2>&1".format(pid=pid))
 			sleep(config.sleepAfterKillall)
 		else:
 			debug("no process found")
 
 
 def debianIsPackageInstalled(package):
-	dpkgOut = execute("dpkg -l %s" % package)
+	dpkgOut = execute("dpkg -l {package:s}".format(package=package))
 	if not(dpkgOut):
 		return 0
 	lastLine = dpkgOut[-1]
@@ -786,7 +783,7 @@ def debianIsPackageInstalled(package):
 
 def debianGetDepends(package):
 	depends = []
-	for line in execute("dpkg -p %s" % package):
+	for line in execute("dpkg -p {package:s}".format(package=package)):
 		if line.startswith("Depends: "):
 			packs = line[8:].replace("|", ",").split(",")
 			for pack in packs:
@@ -800,10 +797,10 @@ def tryExecute(commands):
 	if isinstance(commands, str):
 		commands = [commands]
 	for command in commands:
-		debug("Executing command '%s' (pwd=%s)" % (command, config.tempDir), endLine=0)
+		debug("Executing command '{command:s}' (pwd={dir:s})".format(command=command, dir=config.tempDir), endLine=0)
 		os.chdir(config.tempDir)
-		returnCode = os.system("%s >/dev/null 2>/dev/null &" % command)
-		debug("   return code is %i " % returnCode)
+		returnCode = os.system("{command:s} >/dev/null 2>/dev/null &".format(command=command))
+		debug("   return code is {code:d}".format(code=returnCode))
 
 
 def checkConfig():
@@ -823,7 +820,7 @@ def runTests(tests, chrootCommands=None):
 	i = 1
 	moveIndent(1)
 	while not(finished):
-		debug("Execution #%i" % i)
+		debug("Execution #{count:d}".format(count=i))
 		moveIndent(1)
 		if chrootCommands:
 			sleep(config.sleepAfterStartCommand)
@@ -839,7 +836,7 @@ def runTests(tests, chrootCommands=None):
 			debug("No missing file found")
 			finished = 1
 		elif i > config.maxExecutions:
-			debug("Still missing files after %i tries" % config.maxExecutions)
+			debug("Still missing files after {count:d} tries".format(count=config.maxExecutions))
 			finished = 1
 		i = i + 1
 		if chrootCommands:
@@ -856,9 +853,9 @@ def displayWarnings():
 		(warningType, warningDetail) = warning
 		if warningType == "/proc":
 			s = [
-				"You'll need the filesystem procfs mounted as %s%s" % (config.chroot, config.procPath),
+				"You'll need the filesystem procfs mounted as {chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath),
 				"It's mounted now, you can mount it again for example before starting the daemon with :",
-				"mount -t proc proc %s%s" % (config.chroot, config.procPath),
+				"mount -t proc proc {chroot:s}{file:s}".format(chroot=config.chroot, file=config.procPath),
 				]
 		elif warningType == "socket":
 			(socketFile, exists) = warningDetail
@@ -866,15 +863,15 @@ def displayWarnings():
 				s = [
 					"Attempt to access /dev/log, a socket used by syslogd. Some suggestions:",
 					"- if your version of syslogd supports it you can tell it to listen to the",
-					"  additional socket %s/dev/log, and put it in the configuration directive 'preserve'" % config.chroot,
-					"  maybe start syslog with the option -a %s/dev/log" % config.chroot,
+					"  additional socket {chroot:s}/dev/log, and put it in the configuration directive 'preserve'".format(chroot=config.chroot),
+					"  maybe start syslog with the option -a {chroot:s}/dev/log".format(chroot=config.chroot),
 					"- use a syslog proxy like holelogd",
 					"- configure the daemon to log into files instead through syslog",
 					]
 			else:
 				s = [
-					"Attempt to access the socket file %s, which %s outside the jail" % (socketFile, exists),
-					"if needed it must be created inside the jail as %s%s""" % (config.chroot, socketFile),
+					"Attempt to access the socket file {file:s}, which {exists:s} outside the jail".format(file=socketFile, exists=exists),
+					"if needed it must be created inside the jail as {chroot:s}{file:s}""".format(chroot=config.chroot, file=socketFile),
 					]
 				s = s + [
 					"If you create the socket, put it in the configuration option 'preserve'",
@@ -885,8 +882,8 @@ def displayWarnings():
 						"As this socket doesn't exist outside the jail, you can probably ignore this warning safely.",
 						]
 		else:
-			abort("No method to display the warning '%s'" % warningType)
-		sys.stdout.write("\nWARNING:\n%s\n" % "\n".join(["   %s" % l for l in s]))
+			abort("No method to display the warning '{type:s}'".format(type=warningType))
+		sys.stdout.write("\nWARNING:\n{lines:s}\n".format(lines="\n".join(["   {line:s}".format(line=l) for l in s])))
 
 
 def initRunningPids():
@@ -899,9 +896,9 @@ def initRunningPids():
 def makeChroot():
 	global tmpOut
 
-	debug("Chroot directory is %s" % config.chroot)
+	debug("Chroot directory is {chroot:s}".format(chroot=config.chroot))
 	if not(os.path.isdir(config.chroot)):
-		sys.stderr.write("ERROR: The chroot location defined '%s' does not exist. Please create it and run makejail again.\n" % config.chroot)
+		sys.stderr.write("ERROR: The chroot location defined '{chroot:s}' does not exist. Please create it and run makejail again.\n".format(chroot=config.chroot))
 		sys.exit(1)
 
 	# In the strace output, the command attempt to access
@@ -914,7 +911,7 @@ def makeChroot():
 
 	# Create temp strace dir
 	if not(os.path.isdir(config.tempDir)):
-		debug("Creating temp dir %s" % config.tempDir)
+		debug("Creating temp dir {dir:s}".format(dir=config.tempDir))
 		os.mkdir(config.tempDir)
 	tempfile.tempdir = config.tempDir
 
@@ -933,7 +930,7 @@ def makeChroot():
 
 	# === Copy specific paths
 	for globExpression in config.forceCopy:
-		debug("Adding files matching '%s'" % globExpression)
+		debug("Adding files matching '{pattern:s}'".format(pattern=globExpression))
 		moveIndent(1)
 		for file in glob.glob(globExpression):
 			addFileToJail(file)
@@ -942,7 +939,7 @@ def makeChroot():
 	chrootCommands = []
 	if config.testCommandsInsideJail:
 		for command in config.testCommandsInsideJail:
-			chrootCommands.append("chroot %s %s" % (config.chroot, command))
+			chrootCommands.append("chroot {chroot:s} {command:s}".format(chroot=config.chroot, command=command))
 
 	# === Execute main command until there is no missing file
 	if chrootCommands:
@@ -952,7 +949,7 @@ def makeChroot():
 		moveIndent(1)
 		killall(config.processNames)
 		while not(finished):
-			debug("Execution #%i" % i)
+			debug("Execution #{count:d}".format(count=i))
 			moveIndent(1)
 			missingFiles = addMissingFilesFromProcess(chrootCommands)
 			i = i + 1
@@ -960,7 +957,7 @@ def makeChroot():
 				debug("No missing file found")
 				finished = 1
 			if i > config.maxExecutions:
-				debug("Still missing files after %i tries" % config.maxExecutions)
+				debug("Still missing files after {count:d} tries".format(count=config.maxExecutions))
 				finished = 1
 			killall(config.processNames)
 			moveIndent(-1)
@@ -1004,24 +1001,24 @@ def makeChroot():
 
 	# /etc/ld.so.cache
 	if needLdCache:
-		debug("Generating %s" % config.pathToLdSoCache)
+		debug("Generating {path:s}".format(path=config.pathToLdSoCache))
 		moveIndent(1)
 		# /etc/ld.so.conf may contains path which are invalid in chroot, ldconfig ignores them
 		addFileToJail(config.pathToLdSoConf)
-		newLdConfig = "%s%s" % (config.chroot, config.pathToLdConfig)
+		newLdConfig = "{chroot:s}{path:s}".format(chroot=config.chroot, path=config.pathToLdConfig)
 		ldconfigAlreadyHere = os.path.isfile(newLdConfig)
 		newFiles = addFileToJail(config.pathToLdConfig)
-		tryExecute("chroot %s %s" % (config.chroot, config.pathToLdConfig))
+		tryExecute("chroot {chroot:s} {path:s}".format(chroot=config.chroot, path=config.pathToLdConfig))
 		debug("Removing ldconfig from jail")
 		moveIndent(1)
 		newFiles.reverse()
 		for file in newFiles:
-			file = "%s%s" % (config.chroot, file)
+			file = "{chroot:s}{file:s}".format(chroot=config.chroot, file=file)
 			if os.path.islink(file) or os.path.isfile(file):
-				debug("Removing file %s" % file)
+				debug("Removing file {file:s}".format(file=file))
 				os.unlink(file)
 			elif os.path.isdir(file):
-				debug("Removing dir %s" % file)
+				debug("Removing dir {dir:s}".format(dir=file))
 				os.rmdir(file)
 			else:
 				raise ValueError
@@ -1031,35 +1028,35 @@ def makeChroot():
 
 
 def loadConfig(file):
-	debug("Loading configuration file %s" % file)
+	debug("Loading configuration file {file:s}".format(file=file))
 
 	moveIndent(1)
 
 	try:
 		assert os.path.isfile(file)
 	except:
-		abort("Cannot open configuration file '%s'" % file)
+		abort("Cannot open configuration file '{file:s}'".format(file=file))
 
 	if ("/" in file):
 		dir = "/".join(file.split("/")[:-1])
 		if dir[0] != "/":
-			dir = "%s/%s" % (os.getcwd(), dir)
+			dir = "{path:s}/{dir:s}".format(path=os.getcwd(), dir=dir)
 		sys.path.insert(0, dir)
 
 	try:
 		importlib.machinery.SOURCE_SUFFIXES.append('') # empty string to allow any file
-		spec = importlib.util.spec_from_file_location("newConfig%s" % file, file)
+		spec = importlib.util.spec_from_file_location("newConfig{file:s}".format(file=file), file)
 		newConfig = importlib.util.module_from_spec(spec)
 		spec.loader.exec_module(newConfig)
 		importlib.machinery.SOURCE_SUFFIXES.pop()
 	except:
-		sys.stderr.write("ERROR: Cannot load configuration file '%s' as a python module\n" % file)
+		sys.stderr.write("ERROR: Cannot load configuration file '{file:s}' as a python module\n".format(file=file))
 		sys.stderr.write("ERROR: Executing it with python which should display a syntax error:\n")
-		os.system("python3 %s" % file)
+		os.system("python3 {file:s}".format(file=file))
 		sys.exit(1)
 
 	# Remove byte-compile file
-	bcFile = "%sc" % file
+	bcFile = "{file:s}c".format(file=file)
 	if os.path.isfile(bcFile):
 		os.unlink(bcFile)
 
@@ -1067,12 +1064,12 @@ def loadConfig(file):
 		if key[:2] == "__":
 			continue
 		if not(key in config.__dict__):
-			abort("Invalid configuration key '%s'" % key)
+			abort("Invalid configuration key '{key:s}'".format(key=key))
 		if isinstance(value, str):
-			s = "'%s'" % value
+			s = "'{value:s}'".format(value=value)
 		else:
-			s = "%s" % value
-		debug("Defining %s = %s" % (key, s))
+			s = "{value}".format(value=value)
+		debug("Defining {key:s} = {value}".format(key=key, value=s))
 		config.__dict__[key] = value
 
 	moveIndent(-1)
@@ -1084,7 +1081,7 @@ if __name__ == "__main__":
 	try:
 		configFile = sys.argv[1]
 	except IndexError:
-		abort("Usage: %s package\n\tpackage is the name of an installed package\n\t(a configuration file must exist in %s)" % (sys.argv[0], config.etcFile))
+		abort("Usage: {command:s} package\n\tpackage is the name of an installed package\n\t(a configuration file must exist in {file:s})".format(command=sys.argv[0], file=config.etcFile))
 
 	# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=680283
 	dpkg_stdout = os.popen("dpkg --print-architecture")
