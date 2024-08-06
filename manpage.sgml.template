@@ -93,7 +93,7 @@ __ENDLOOP(ITEMS)__
 
   <refsect1>
     <title>AUTHOR</title>
-    <para>This manual page was written by &dhusername;, <email>alain@onesite.org</email></para>
+    <para>This manual page was written by &dhusername;, &dhemail;</para>
     <para>This software comes with no warranty.</para>
   </refsect1>
   <refsect1>

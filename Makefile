@@ -6,6 +6,7 @@ BIN_DIR = $(prefix)/sbin
 DOC_DIR = $(prefix)/share/doc/makejail
 MAN_DIR = $(prefix)/share/man/man8
 HTML_DIR = $(DOC_DIR)/html
+MAN_PAGE_SGML = manpage.sgml
 MAN_PAGE = makejail.8
 EXAMPLES_DIR = $(DOC_DIR)/examples
 
@@ -20,7 +21,7 @@ all: docs
 
 docs:
 	python makedocs
-	docbook-to-man manpage.sgml > $(MAN_PAGE)
+	docbook-to-man $(MAN_PAGE_SGML) > $(MAN_PAGE)
 
 install:
 	if (test ! -d $(BIN_DIR)); then mkdir -p $(BIN_DIR) ; fi
@@ -36,11 +37,11 @@ install:
 	cp -a examples/* $(EXAMPLES_DIR)
 	chmod 644 $(EXAMPLES_DIR)/*
 	if (test ! -d $(MAN_DIR)); then mkdir -p $(MAN_DIR) ; chmod 755 $(MAN_DIR) ; fi
-	$(INSTALL) makejail.8 $(MAN_DIR)
+	$(INSTALL) $(MAN_PAGE) $(MAN_DIR)
 	chmod 644 $(MAN_DIR)/$(MAN_PAGE)
 
 clean_docs:
-	rm -rf doc manpage.sgml makejail.8
+	rm -rf doc $(MAN_PAGE_SGML) $(MAN_PAGE)
 
 uninstall:
 	rm -f $(BIN_DIR)/makejail
