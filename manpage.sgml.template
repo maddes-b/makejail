@@ -10,15 +10,15 @@ manpage.1: manpage.sgml
   -->
 
   <!-- Fill in your name for FIRSTNAME and SURNAME. -->
-  <!ENTITY dhfirstname "<firstname>Tesio</firstname>">
-  <!ENTITY dhsurname   "<surname>Alain</surname>">
+  <!ENTITY dhfirstname "<firstname>Alain</firstname>">
+  <!ENTITY dhsurname   "<surname>Tésio</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
   <!ENTITY dhdate      "<date>__SYSTEMDATE__</date>">
   <!-- SECTION should be 1-8, maybe w/ subsection other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY dhsection   "<manvolnum>8</manvolnum>">
   <!ENTITY dhemail     "<email>alain@onesite.org</email>">
-  <!ENTITY dhusername  "Alain Tesio">
+  <!ENTITY dhusername  "Alain Tésio">
   <!ENTITY dhucpackage "<refentrytitle>MAKEJAIL</refentrytitle>">
   <!ENTITY dhpackage   "makejail">
 

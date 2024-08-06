@@ -240,9 +240,9 @@ Format: ["package1", "package2"]
 
 Default: []
 
-H3:debianDpkgInfoDir
+H3:debianDpkgInfoFile
 
-Path to the dpkg $package.list files, "%s" will be replaced by the name of the package.
+Path to the dpkg package list files. "%s" will be replaced by the name of the package.
 
 Format: "/path/to/info/files/%s.list"
 
