@@ -335,14 +335,6 @@ def addPasswdFile(file, what):
 	moveIndent(-1)
 
 
-def getMajorMinor(fileName):
-	# Pure python functions should be available in 2.3
-	try:
-		return map(lambda h: int(h, 16), execute('stat -t -c "%%t %%T" %s' % fileName)[0].split())
-	except:
-		abort("Cannot get the major and minor codes for the file %s" % fileName)
-
-
 def fileIsNewer(fileName1, fileName2):
 	return os.stat(fileName1)[stat.ST_MTIME] > os.stat(fileName2)[stat.ST_MTIME]
 
@@ -372,10 +364,11 @@ def addFileToJail(fileName):
 			installedFiles[fileName] = 0
 			return []
 	try:
-		statMode = os.stat(fileName)[stat.ST_MODE]
+		stats = os.stat(fileName)
 	except OSError:
 		debug("   The path '%s' doesn't exist" % fileName)
 		return []
+	statMode = stats.st_mode
 	installedFiles[fileName] = 1
 	if fileName[0] != "/":
 		abort("The path '%s' is not absolute" % fileName)
@@ -457,7 +450,9 @@ def addFileToJail(fileName):
 		else:
 			label = "block"
 			deviceType = "b"
-		(major, minor) = getMajorMinor(fileName)
+		device = stats.st_rdev
+		major = os.major(device)
+		minor = os.minor(device)
 		debug("   Creating %s device %s (major=%i, minor=%i)" % (label, fileName, major, minor))
 		os.system("mknod %s %s %i %i" % (fileInChroot, deviceType, major, minor))
 		missingFiles.append(fileName)
