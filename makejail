@@ -14,7 +14,6 @@
 # Required unusual external programs:
 # strace (package strace)
 # killall (package psmisc)
-# stat (package stat)
 
 # Configuration defaults
 # Don't change this file, to define new defaults values create a file /etc/makejail/makejail.conf
@@ -271,7 +270,7 @@ def dpkgInfoFiles(packagename):
 def copyStatAndOwner(source, target):
 	# Copy user/group info
 	statInfos = os.stat(source)
-	os.chown(target, statInfos[stat.ST_UID], statInfos[stat.ST_GID])
+	os.chown(target, statInfos.st_uid, statInfos.st_gid)
 
 	# Keep all attributes
 	shutil.copystat(source, target)
@@ -335,16 +334,8 @@ def addPasswdFile(file, what):
 	moveIndent(-1)
 
 
-def getMajorMinor(fileName):
-	# Pure python functions should be available in 2.3
-	try:
-		return map(lambda h: int(h, 16), execute('stat -t -c "%%t %%T" %s' % fileName)[0].split())
-	except:
-		abort("Cannot get the major and minor codes for the file %s" % fileName)
-
-
 def fileIsNewer(fileName1, fileName2):
-	return os.stat(fileName1)[stat.ST_MTIME] > os.stat(fileName2)[stat.ST_MTIME]
+	return os.stat(fileName1).st_mtime > os.stat(fileName2).st_mtime
 
 
 def addFileToJail(fileName):
@@ -372,10 +363,11 @@ def addFileToJail(fileName):
 			installedFiles[fileName] = 0
 			return []
 	try:
-		statMode = os.stat(fileName)[stat.ST_MODE]
+		stats = os.stat(fileName)
 	except OSError:
 		debug("   The path '%s' doesn't exist" % fileName)
 		return []
+	statMode = stats.st_mode
 	installedFiles[fileName] = 1
 	if fileName[0] != "/":
 		abort("The path '%s' is not absolute" % fileName)
@@ -390,7 +382,7 @@ def addFileToJail(fileName):
 			mountProc()
 			procMounted = 1
 		return []
-	targetDirs = string.split(fileName[1:], "/")[:-1]
+	targetDirs = string.split(fileName[1:], os.sep)[:-1]
 	checkDir = ""
 	for targetDir in targetDirs:
 		checkDir = checkDir + "/%s" % targetDir
@@ -457,7 +449,9 @@ def addFileToJail(fileName):
 		else:
 			label = "block"
 			deviceType = "b"
-		(major, minor) = getMajorMinor(fileName)
+		device = stats.st_rdev
+		major = os.major(device)
+		minor = os.minor(device)
 		debug("   Creating %s device %s (major=%i, minor=%i)" % (label, fileName, major, minor))
 		os.system("mknod %s %s %i %i" % (fileInChroot, deviceType, major, minor))
 		missingFiles.append(fileName)
@@ -647,7 +641,7 @@ def addMissingFilesFromStraceLines(lines):
 		if missingFile and not (missingFile in missingFiles):
 			if missingFile == config.chroot:
 				continue
-			if string.split(missingFile, "/")[-1] == "chroot":
+			if os.path.basename(missingFile) == "chroot":
 				continue
 			try:
 				statInfos = os.stat(missingFile)
@@ -664,8 +658,8 @@ def addMissingFilesFromStraceLines(lines):
 		missingFile = matchPatterns(config.straceCreatePatterns, line, nextLine)
 		if missingFile and not (missingFile in missingFiles):
 			debug("Failed attempt at creating the file %s" % missingFile)
-			missingFile = removeTrailingSlashes(missingFile)
-			dir = string.join(string.split(missingFile, "/")[:-1], "/")
+			missingFile = os.path.normpath(missingFile)
+			dir = os.path.dirname(missingFile)
 			if os.path.isdir(dir) and not(os.path.isdir(config.chroot + dir)):
 				moveIndent(1)
 				if addFileToJail(dir):
@@ -676,7 +670,7 @@ def addMissingFilesFromStraceLines(lines):
 		missingFile = matchPatterns(config.straceSocketPatterns, line, nextLine)
 		if missingFile and not(installedFiles.has_key(missingFile)):
 			try:
-				statMode = os.stat(missingFile)[stat.ST_MODE]
+				statMode = os.stat(missingFile).st_mode
 			except:
 				exists = "doesn't exist"
 			else:
@@ -689,12 +683,6 @@ def addMissingFilesFromStraceLines(lines):
 			warnings.append(("socket", (missingFile, exists)))
 
 	return missingFiles
-
-
-def removeTrailingSlashes(s):
-	while s[-1] == "/":
-		s = s[:-1]
-	return s
 
 
 def sleep(delay):
@@ -833,7 +821,7 @@ def checkConfig():
 		abort("Effective user id is not 0, this command must be run as root")
 	if not(config.chroot):
 		abort("You didn't define the variable chroot")
-	config.chroot = removeTrailingSlashes(config.chroot)
+	config.chroot = os.path.normpath(config.chroot)
 	if config.chroot[0] != "/":
 		abort("The variable chroot must be an absolute path")
 	if not(config.testCommandsInsideJail) and ("interactive" in config.testCommandsOutsideJail):
@@ -1063,8 +1051,9 @@ def loadConfig(file):
 	except:
 		abort("Cannot open configuration file '%s'" % file)
 
-	if ("/" in configFile):
-		dir = string.join(string.split(file, "/")[:-1], "/")
+	file = os.path.normpath(file)
+	if (os.sep in file):
+		dir = os.path.dirname(file)
 		if dir[0] != "/":
 			dir = "%s/%s" % (os.getcwd(), dir)
 		sys.path.insert(0, dir)
