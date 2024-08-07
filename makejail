@@ -1055,7 +1055,7 @@ def loadConfig(file):
 	if ("/" in configFile):
 		dir = string.join(string.split(file, "/")[:-1], "/")
 		if dir[0] != "/":
-			dir = "%s/%s" % (os.getcwd, dir)
+			dir = "%s/%s" % (os.getcwd(), dir)
 		sys.path.insert(0, dir)
 
 	try:
