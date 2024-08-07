@@ -1,37 +1,65 @@
 # Makejail configuration file for sshd
-# 
-# Created by Javier Fernandez-sanguino <jfs@computer.org>
+# -*- coding: utf-8; tab-width: 4; -*-
+#
+# Created by Javier Fernandez-Sanguino Peña <jfs@debian.org>
 # Thu, 29 Aug 2002 23:44:51 +0200
 #
-chroot="/var/chroot/sshd"
-forceCopy=["/etc/ssh/ssh_host*","/etc/ssh/sshd*","/etc/ssh/moduli",
-	"/etc/pam.conf","/etc/security/*","/etc/pam.d/ssh","/etc/pam.d/other",
+chroot = "/var/chroot/sshd"
+forceCopy = [
+	"/etc/ssh/ssh_host*",
+	"/etc/ssh/sshd*",
+	"/etc/ssh/moduli",
+	"/etc/pam.conf",
+	"/etc/security/*",
+	"/etc/pam.d/ssh",
+	"/etc/pam.d/other",
 	"/etc/pam.d/common*",
-	"/etc/hosts","/etc/nsswitch.conf",
-	"/var/run/sshd","/lib/security/*",
-	"/etc/shells", "/etc/nologin","/etc/environment","/etc/motd",
-	"/etc/shadow","/etc/hosts*", 
-	"/bin/*sh", "/lib/libnss*",
-	"/dev/pt*","/dev/ttyp[0-9]*"]
+	"/etc/hosts",
+	"/etc/nsswitch.conf",
+	"/var/run/sshd",
+	"/run",
+	"/run/sshd",
+	"/lib/security/*",
+	"/etc/shells",
+	"/etc/nologin",
+	"/etc/environment",
+	"/etc/motd",
+	"/etc/shadow",
+	"/etc/hosts*",
+	"/bin/*sh",
+	"/lib/libnss*",
+	"/dev/pt*",
+	"/dev/ttyp[0-9]*",
+	"/etc/default/ssh",
+	"/dev/null",
+	]
 
 # Remove this if you want to make configuration changes *outside* of the
 # chroot environment
-# preserve=["/etc/","/home/","/dev/"]
+# preserve = ["/etc/", "/home/", "/dev/"]
 # otherwise just do this:
-preserve=["/dev/","/home"]
+preserve = ["/dev/", "/home/"]
 
 # Besides the sshd user (needed after 3.4p1) any user which is going to
 # be granted access to the ssh daemon should be added to 'users' and
 # 'groups'.
-userFiles=["/etc/passwd","/etc/shadow"]
-groupFiles=["/etc/group","/etc/gshadow"]
-users=["sshd"]
-groups=["sshd"]
+userFiles = ["/etc/passwd", "/etc/shadow"]
+groupFiles = ["/etc/group", "/etc/gshadow"]
+forceCopy.extend(userFiles)
+forceCopy.extend(groupFiles)
+users = [
+	"sshd",
+	#"myuser",
+	]
+groups = [
+	"sshd",
+	#"myuser",
+	]
 
-testCommandsInsideJail=["start-stop-daemon --start --quiet --pidfile /var/run/sshd.pid --exec /usr/sbin/sshd"]
-testCommandsOutsideJail=["ssh localhost"]
+testCommandsInsideJail = ["/bin/sh -c '. /etc/default/ssh ; /usr/sbin/sshd -D ${SSHD_OPTS} ;'"]
+testCommandsOutsideJail = ["ssh localhost"]
 
-processNames=["sshd"]
+processNames = ["sshd"]
 
 # Changes to do to jail sshd:
 # 1.- start makejail with this configuration file
@@ -41,8 +69,8 @@ processNames=["sshd"]
 # 2.- In init.d's startup script (/etc/init.d/sshd):
 # replace "start-stop-daemon ..." with "chroot /var/chroot/sshd start-stop-daemon ..."
 #
-# 3.- configure syslog to also listen to the socket /var/chroot/sshd/dev/log, 
-# restart sysklogd. 
+# 3.- configure syslog to also listen to the socket /var/chroot/sshd/dev/log,
+# restart sysklogd.
 # (for Debian) This can be done by changing the SYSLOGD option in
 # /etc/init.d/syslogd to
 # SYSLOGD="-p /dev/log -p /var/chroot/sshd/dev/log"
@@ -55,7 +83,6 @@ processNames=["sshd"]
 # packages=["coreutils"]
 #     You can add any other Debian packages you want users to have access
 #     to.
-# 
-# WARNING: this configuration file has only been slightly tested. 
+#
+# WARNING: this configuration file has only been slightly tested.
 #          It has not been thoroughly tested yet.
-
