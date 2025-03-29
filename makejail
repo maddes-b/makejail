@@ -81,17 +81,17 @@ class configClass:
 		self.straceCommandStop = "killall -9 strace"
 		self.straceCommandView = None
 		self.stracePatterns = [
-			'.*\("([^"]*)",.*\) .*= -[0-9]* ENO.*',
-			'.*\("([^"]*)",.*\) .*= -[0-9]* EACCES.*',
-			'chdir\("([^"]*)"\) .*= -[0-9]* ENO.*',
-			'chdir\("([^"]*)"\) .*= -[0-9]* EACCESS.*',
+			r'.*\("([^"]*)",.*\) .*= -[0-9]* ENO.*',
+			r'.*\("([^"]*)",.*\) .*= -[0-9]* EACCES.*',
+			r'chdir\("([^"]*)"\) .*= -[0-9]* ENO.*',
+			r'chdir\("([^"]*)"\) .*= -[0-9]* EACCESS.*',
 			]
 		self.straceCreatePatterns = [
-			'.*\("([^"]*)",.*O_CREAT.*\) .* ENOENT .*',
-			'bind\(.* path="([^"]*)".* ENOENT .*',
+			r'.*\("([^"]*)",.*O_CREAT.*\) .* ENOENT .*',
+			r'bind\(.* path="([^"]*)".* ENOENT .*',
 			]
 		self.straceSocketPatterns = [
-			'connect\(.* path="([^"]*)".* ENOENT .*',
+			r'connect\(.* path="([^"]*)".* ENOENT .*',
 			]
 
 
